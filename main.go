@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"gopher/configuration"
 	"io"
 	"log"
 	"net"
@@ -26,23 +27,29 @@ var (
 	shutdown = make(chan struct{}) // closed on shutdown
 )
 
+var cfg = configuration.GetConfiguration()
+
 func main() {
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%s", cfg.Host, cfg.Port))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println("Gopher server running on port", port)
+	log.Println(cfg.Title, "listening on", cfg.Host, "port", cfg.Port)
 
 	// Capture Ctrl‑C and SIGTERM
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-
+	listenerDone := make(chan struct{})
+	shutdownDone := make(chan struct{})
 	go func() {
 		<-sig
 		log.Println("Shutdown signal received")
 		close(shutdown)
 		ln.Close()
+		<-listenerDone
+		log.Println("Shutdown complete")
+		shutdownDone <- struct{}{}
 	}()
 
 	for {
@@ -50,12 +57,16 @@ func main() {
 		if err != nil {
 			log.Println("Listener closed, waiting for active connections...")
 			wg.Wait()
-			log.Println("All connections closed. Goodbye.")
-			return
+			log.Println("All connections closed.")
+			listenerDone <- struct{}{}
+			break
 		}
 		wg.Add(1)
 		go handle(conn)
+
 	}
+	<-shutdownDone
+	log.Println("Done.")
 }
 
 func handle(conn net.Conn) {
