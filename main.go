@@ -14,7 +14,7 @@ import (
 var cfg = configuration.GetConfiguration()
 
 func main() {
-	shutdownDone := make(chan struct{})
+	serverShutdown := make(chan struct{})
 	log.Println("Starting server...")
 	var svr = server.Server{
 		Addr: cfg.HostBindIp + ":" + cfg.Port,
@@ -23,7 +23,7 @@ func main() {
 		if err := svr.ListenAndServe(cfg.GopherRoot); err != nil {
 			log.Fatal(err)
 		}
-		shutdownDone <- struct{}{}
+		serverShutdown <- struct{}{}
 	}()
 	// Capture Ctrl‑C and SIGTERM
 	sig := make(chan os.Signal, 1)
@@ -38,6 +38,6 @@ func main() {
 	}
 	log.Println("Shutdown complete")
 
-	<-shutdownDone
+	<-serverShutdown
 	log.Println("Done.")
 }

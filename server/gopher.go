@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -43,10 +42,6 @@ func (s *Server) wrap(h HandlerFunc) HandlerFunc {
 }
 
 func (s *Server) ListenAndServe(gopherRoot string) error {
-	s.Handler = handle
-	if s.Handler == nil {
-		return errors.New("gopher: no handler")
-	}
 
 	ln, err := net.Listen("tcp", s.Addr)
 	if err != nil {
@@ -71,7 +66,7 @@ func (s *Server) ListenAndServe(gopherRoot string) error {
 	}
 }
 
-func (s *Server) handleConn(handler HandlerFunc, conn net.Conn, gopherRoot string) {
+func (s *Server) handleConn(handler HandlerFunc, conn net.Conn, gopherRoot string) error {
 	defer s.untrackConn(conn)
 	defer conn.Close()
 
@@ -93,10 +88,14 @@ func (s *Server) handleConn(handler HandlerFunc, conn net.Conn, gopherRoot strin
 	reader := bufio.NewReader(conn)
 	req, err := reader.ReadString('\n')
 	if err != nil {
-		return
+		return err
 	}
 
-	_ = handler(ctx, conn, req)
+	var selector = strings.TrimSpace(req)
+	log.Println("Selector:", selector)
+	var _rootDir = ctx.Value("gopherRoot").(string)
+	serveSelector(conn, _rootDir, selector)
+	return nil
 
 }
 
@@ -158,17 +157,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	case <-done:
 		return nil
 	}
-}
-
-func handle(ctx context.Context, c net.Conn, req string) error {
-	defer c.Close()
-
-	var selector = strings.TrimSpace(req)
-	log.Println("Selector:", selector)
-	var _rootDir = ctx.Value("gopherRoot").(string)
-	serveSelector(c, _rootDir, selector)
-	return nil
-
 }
 
 func serveSelector(conn net.Conn, rootDir string, selector string) {
