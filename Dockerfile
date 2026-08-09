@@ -7,6 +7,6 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH \
 FROM ubuntu:latest
 COPY --from=build /src/gogopher gogopher
 COPY .env .
-COPY /gopherroot gopherroot
+COPY /gopher-root gopherroot
 EXPOSE 70
 ENTRYPOINT ["/gogopher"]

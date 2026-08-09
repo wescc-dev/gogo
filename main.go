@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"gopher/configuration"
+	"gopher/server"
 	"io"
 	"log"
 	"net"
@@ -12,75 +14,43 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 )
 
-const (
-	port    = 70
-	rootDir = "./gopherroot"
-)
-
-var (
-	wg       sync.WaitGroup
-	shutdown = make(chan struct{}) // closed on shutdown
-)
+var shutdown = make(chan struct{}) // closed on shutdown
 
 var cfg = configuration.GetConfiguration()
 
 func main() {
-	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%s", cfg.HostBindIp, cfg.Port))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println(cfg.Title, "listening on", cfg.Host, "port", cfg.Port)
-
 	// Capture Ctrl‑C and SIGTERM
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	listenerDone := make(chan struct{})
 	shutdownDone := make(chan struct{})
 	go func() {
+		var svr = server.Server{
+			Addr: cfg.HostBindIp + ":" + cfg.Port,
+		}
+		if err := svr.ListenAndServe(); err != nil {
+			log.Fatal(err)
+		}
 		<-sig
 		log.Println("Shutdown signal received")
-		close(shutdown)
-		ln.Close()
-		<-listenerDone
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		var err = svr.Shutdown(ctx)
+		if err != nil {
+			log.Println(err)
+		}
 		log.Println("Shutdown complete")
 		shutdownDone <- struct{}{}
 	}()
-
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			log.Println("Listener closed, waiting for active connections...")
-			wg.Wait()
-			log.Println("All connections closed.")
-			listenerDone <- struct{}{}
-			break
-		}
-		wg.Add(1)
-		go handle(conn)
-
-	}
 	<-shutdownDone
 	log.Println("Done.")
 }
 
-func handle(conn net.Conn) {
-	defer wg.Done()
-	defer conn.Close()
-
-	// If shutdown triggered, abort immediately
-	select {
-	case <-shutdown:
-		log.Println("Closing connection due to shutdown:", conn.RemoteAddr())
-		return
-	default:
-		log.Println("Handling connection:", conn.RemoteAddr())
-	}
+func handle(ctx context.Context, c net.Conn, req string) error {
+	defer c.Close()
 	type inputResult struct {
 		result string
 		err    error
@@ -88,32 +58,28 @@ func handle(conn net.Conn) {
 	var result = make(chan inputResult)
 
 	go func() {
-		reader := bufio.NewReader(conn)
-		err := conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+		reader := bufio.NewReader(c)
+		err := c.SetReadDeadline(time.Now().Add(10 * time.Second))
 		if err != nil {
 			result <- inputResult{err: err}
 			return
 		}
 		selector, err := reader.ReadString('\n')
-		if err := conn.SetReadDeadline(time.Time{}); err != nil {
+		if err := c.SetReadDeadline(time.Time{}); err != nil {
 			// safe to ignore
 		}
 		result <- inputResult{selector, err}
 	}()
 
-	select {
-	case <-shutdown:
-		log.Println("Closing connection due to shutdown:", conn.RemoteAddr())
-		return
-	case r := <-result:
-		if r.err != nil {
-			log.Println(r.err)
-			return
-		}
-		var selector = strings.TrimSpace(r.result)
-		log.Println("Selector:", selector)
-		serveSelector(conn, selector)
+	r := <-result
+	if r.err != nil {
+		log.Println(r.err)
+		return r.err
 	}
+	var selector = strings.TrimSpace(r.result)
+	log.Println("Selector:", selector)
+	serveSelector(c, selector)
+	return nil
 }
 
 func serveSelector(conn net.Conn, selector string) {
