@@ -1,2 +1,5 @@
 /gopherroot/
 /.idea/
+.env
+gogopher
+gopher

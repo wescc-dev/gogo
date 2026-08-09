@@ -30,7 +30,7 @@ var (
 var cfg = configuration.GetConfiguration()
 
 func main() {
-	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%s", cfg.Host, cfg.Port))
+	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%s", cfg.HostBindIp, cfg.Port))
 	if err != nil {
 		log.Fatal(err)
 	}

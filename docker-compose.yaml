@@ -1,0 +1,9 @@
+name: gogopher
+services:
+  gogopher:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: "gogoher"
+    ports:
+      - '7070:70'
