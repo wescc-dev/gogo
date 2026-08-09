@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"log"
 	"net"
 	"sync"
 	"time"
@@ -35,7 +36,7 @@ func (s *Server) wrap(h HandlerFunc) HandlerFunc {
 	return h
 }
 
-func (s *Server) ListenAndServe() error {
+func (s *Server) ListenAndServe(gopherRoot string) error {
 	if s.Handler == nil {
 		return errors.New("gopher: no handler")
 	}
@@ -44,14 +45,12 @@ func (s *Server) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
-
+	log.Printf("gopher: listening on %s", s.Addr)
 	s.mu.Lock()
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})
 	s.mu.Unlock()
-
 	handler := s.wrap(s.Handler)
-
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -60,14 +59,12 @@ func (s *Server) ListenAndServe() error {
 			}
 			return err
 		}
-
 		s.trackConn(conn)
-
-		go s.handleConn(handler, conn)
+		go s.handleConn(handler, conn, gopherRoot)
 	}
 }
 
-func (s *Server) handleConn(handler HandlerFunc, conn net.Conn) {
+func (s *Server) handleConn(handler HandlerFunc, conn net.Conn, gopherRoot string) {
 	defer s.untrackConn(conn)
 	defer conn.Close()
 
@@ -83,6 +80,7 @@ func (s *Server) handleConn(handler HandlerFunc, conn net.Conn) {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, s.IdleTimeout)
 		defer cancel()
+		ctx = context.WithValue(ctx, "gopherRoot", gopherRoot)
 	}
 
 	reader := bufio.NewReader(conn)
@@ -92,6 +90,7 @@ func (s *Server) handleConn(handler HandlerFunc, conn net.Conn) {
 	}
 
 	_ = handler(ctx, conn, req)
+
 }
 
 func (s *Server) trackConn(c net.Conn) {

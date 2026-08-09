@@ -29,9 +29,10 @@ func main() {
 	shutdownDone := make(chan struct{})
 	go func() {
 		var svr = server.Server{
-			Addr: cfg.HostBindIp + ":" + cfg.Port,
+			Addr:    cfg.HostBindIp + ":" + cfg.Port,
+			Handler: handle,
 		}
-		if err := svr.ListenAndServe(); err != nil {
+		if err := svr.ListenAndServe(cfg.GopherRoot); err != nil {
 			log.Fatal(err)
 		}
 		<-sig
@@ -78,11 +79,12 @@ func handle(ctx context.Context, c net.Conn, req string) error {
 	}
 	var selector = strings.TrimSpace(r.result)
 	log.Println("Selector:", selector)
-	serveSelector(c, selector)
+	var _rootDir = ctx.Value("gopherRoot").(string)
+	serveSelector(c, _rootDir, selector)
 	return nil
 }
 
-func serveSelector(conn net.Conn, selector string) {
+func serveSelector(conn net.Conn, rootDir string, selector string) {
 	// Empty selector → serve root directory
 	if selector == "" {
 		serveDirectory(conn, rootDir, selector)
