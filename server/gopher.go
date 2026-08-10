@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -231,6 +232,8 @@ func (s *server) generateEntries() (string, error) {
 			ext := strings.ToLower(filepath.Ext(name))
 
 			switch ext {
+			case ".png", ".jpg", ".jpeg", ".gif":
+				itemType = "I"
 			case ".txt", ".md":
 				itemType = "0" // text file
 			default:
@@ -344,7 +347,7 @@ func serveDirectory(conn net.Conn, dir string, selector string) {
 	// Otherwise list directory
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		fmt.Fprintf(conn, "3Error reading directory\tfake\tlocalhost\t70\r\n.\r\n")
+		fmt.Fprintf(conn, "3Error reading directory"+"\t"+dir+"/\t"+cfg.Host+"\t"+cfg.Port+"\r\n")
 		return
 	}
 	var buf bytes.Buffer
@@ -352,7 +355,9 @@ func serveDirectory(conn net.Conn, dir string, selector string) {
 
 	for _, e := range entries {
 		name := e.Name()
-		fullSelector := filepath.Join(selector, name)
+
+		// Always use path.Join for gopher selectors
+		fullSelector := path.Join(selector, name)
 
 		if e.IsDir() {
 			w.WriteString("1" + name + "\t" + fullSelector + "/\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
@@ -361,18 +366,17 @@ func serveDirectory(conn net.Conn, dir string, selector string) {
 
 		ext := strings.ToLower(filepath.Ext(name))
 
-		if strings.HasSuffix(fullSelector, ".gophermap") ||
-			strings.HasSuffix(fullSelector, "gophermap") {
+		if ext == ".gophermap" {
 			continue
 		}
 
 		switch ext {
 		case ".png", ".jpg", ".jpeg", ".gif":
-			w.WriteString("I" + name + "\t" + fullSelector + "/\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
+			w.WriteString("I" + name + "\t" + fullSelector + "\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
 		case ".txt", ".md", ".log":
-			w.WriteString("0" + name + "\t" + fullSelector + "/\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
+			w.WriteString("0" + name + "\t" + fullSelector + "\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
 		default:
-			w.WriteString("9" + name + "\t" + fullSelector + "/\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
+			w.WriteString("9" + name + "\t" + fullSelector + "\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
 		}
 	}
 
@@ -393,12 +397,12 @@ func serveDirectory(conn net.Conn, dir string, selector string) {
 func serveFile(conn net.Conn, path string) {
 	if strings.HasSuffix(path, ".gophermap") ||
 		strings.HasSuffix(path, ".gophermap") {
-		io.WriteString(conn, "3Access denied\tfake\tlocalhost\t70\r\n.\r\n")
+		io.WriteString(conn, "3Access denied.\r\n")
 		return
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		io.WriteString(conn, "3Error reading file\tfake\tlocalhost\t70\r\n.\r\n")
+		io.WriteString(conn, "3Error reading file.\r\n")
 		return
 	}
 	defer f.Close()
