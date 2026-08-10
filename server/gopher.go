@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"gopher/configuration"
 	"io"
+	"io/fs"
 	"log"
 	"net"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -85,7 +87,7 @@ func (s *server) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("gopher: listening on %s", s.BindAddr)
+	log.Println("gopher: listening on ", s.BindAddr+":"+s.Port)
 	s.mu.Lock()
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})
@@ -207,54 +209,29 @@ func (s *server) generateGopherMap() error {
 }
 
 func (s *server) generateEntries() (string, error) {
-	entries := &strings.Builder{}
-
 	dir, err := os.ReadDir(s.GopherRoot)
 	if err != nil {
 		return "", fmt.Errorf("cannot read gopher root: %w", err)
 	}
 
-	for _, entry := range dir {
-		name := entry.Name()
+	var entries []string
 
-		// Skip the gophermap itself
-		if name == ".gophermap" || name == "gophermap" {
+	for _, e := range dir {
+		if s, err := buildGopherEntry(e, "", s.Hostname, s.Port); err != nil {
+			log.Println(err)
 			continue
-		}
-
-		var itemType string
-		var selector string
-
-		if entry.IsDir() {
-			itemType = "1" // directory
-			selector = "/" + name
 		} else {
-			ext := strings.ToLower(filepath.Ext(name))
-
-			switch ext {
-			case ".png", ".jpg", ".jpeg", ".gif":
-				itemType = "I"
-			case ".txt", ".md":
-				itemType = "0" // text file
-			default:
-				itemType = "9" // binary file
-			}
-
-			selector = "/" + name
+			entries = append(entries, s)
 		}
-
-		// Gopher line format:
-		// <type><display>\t<selector>\t<host>\t<port>
-		fmt.Fprintf(entries, "%s%s\t%s\t%s\t%s\n",
-			itemType,
-			name,
-			selector,
-			s.Hostname,
-			s.Port,
-		)
 	}
-
-	return entries.String(), nil
+	var entriesBuf bytes.Buffer
+	w := bufio.NewWriter(&entriesBuf)
+	sort.Strings(entries)
+	for _, entry := range entries {
+		w.WriteString(entry)
+	}
+	w.Flush()
+	return entriesBuf.String(), nil
 }
 
 func (s *server) handleConn(handler HandlerFunc, conn net.Conn, gopherRoot string) error {
@@ -313,7 +290,7 @@ func serveSelector(conn net.Conn, rootDir string, selector string) {
 	realPath, _ := filepath.Abs(path)
 
 	if !strings.HasPrefix(realPath, realRoot) {
-		_, err := io.WriteString(conn, "3Access denied\tfake\tlocalhost\t70\r\n.\r\n")
+		_, err := io.WriteString(conn, "3Access denied.\r\n")
 		if err != nil {
 			return
 		}
@@ -333,7 +310,7 @@ func serveSelector(conn net.Conn, rootDir string, selector string) {
 	}
 
 	// Not found
-	fmt.Fprintf(conn, "3Not found\tfake\t"+""+"\t70\r\n.\r\n")
+	fmt.Fprintf(conn, "3Not found.\r\n.\r\n")
 }
 
 func serveDirectory(conn net.Conn, dir string, selector string) {
@@ -352,32 +329,19 @@ func serveDirectory(conn net.Conn, dir string, selector string) {
 	}
 	var buf bytes.Buffer
 	w := bufio.NewWriter(&buf)
-
+	var entires []string
 	for _, e := range entries {
-		name := e.Name()
-
-		// Always use path.Join for gopher selectors
-		fullSelector := path.Join(selector, name)
-
-		if e.IsDir() {
-			w.WriteString("1" + name + "\t" + fullSelector + "/\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
+		if gopherEntry, err := buildGopherEntry(e, selector, cfg.Host, cfg.Port); err != nil {
+			log.Println(err)
 			continue
-		}
+		} else {
+			entires = append(entires, gopherEntry)
 
-		ext := strings.ToLower(filepath.Ext(name))
-
-		if ext == ".gophermap" {
-			continue
 		}
-
-		switch ext {
-		case ".png", ".jpg", ".jpeg", ".gif":
-			w.WriteString("I" + name + "\t" + fullSelector + "\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
-		case ".txt", ".md", ".log":
-			w.WriteString("0" + name + "\t" + fullSelector + "\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
-		default:
-			w.WriteString("9" + name + "\t" + fullSelector + "\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
-		}
+	}
+	sort.Strings(entires)
+	for entry := range entires {
+		w.WriteString(entires[entry])
 	}
 
 	if _, err := w.WriteString(".\r\n"); err != nil {
@@ -390,8 +354,46 @@ func serveDirectory(conn net.Conn, dir string, selector string) {
 	}
 	if _, err := conn.Write(buf.Bytes()); err != nil {
 		log.Println("connection write error:", err)
+		return
 	}
 
+}
+
+func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) (string, error) {
+	name := e.Name()
+
+	// Skip hidden files
+	if strings.HasPrefix(name, ".") {
+		return "", nil
+	}
+	// Skip gophermap files
+	if name == "gophermap" {
+		return "", nil
+	}
+
+	// Always use path.Join for gopher selectors
+	fullSelector := path.Join("/"+selector, name)
+
+	// Directories
+	if e.IsDir() {
+		return "1" + name + "\t" + fullSelector + "\t" + host + "\t" + port + "\r\n", nil
+	}
+
+	// Files
+	ext := strings.ToLower(filepath.Ext(name))
+
+	var itemType string
+
+	switch ext {
+	case ".png", ".jpg", ".jpeg", ".gif":
+		itemType = "I"
+	case ".txt", ".md", ".log":
+		itemType = "0"
+	default:
+		itemType = "9"
+	}
+
+	return itemType + name + "\t" + fullSelector + "\t" + host + "\t" + port + "\r\n", nil
 }
 
 func serveFile(conn net.Conn, path string) {
