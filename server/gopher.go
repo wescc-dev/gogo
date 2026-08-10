@@ -19,6 +19,7 @@ type HandlerFunc func(ctx context.Context, c net.Conn, req string) error
 
 type Middleware func(HandlerFunc) HandlerFunc
 
+// Server is a simple gopher server
 type Server struct {
 	Addr         string
 	Handler      HandlerFunc
@@ -160,6 +161,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 func serveSelector(conn net.Conn, rootDir string, selector string) {
+	log.Println("Serving selector:", selector)
 	// Empty selector → serve root directory
 	if selector == "" {
 		serveDirectory(conn, rootDir, selector)
