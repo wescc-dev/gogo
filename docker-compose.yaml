@@ -4,6 +4,13 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    container_name: "gogoher"
+    container_name: "gogopher"
+    volumes:
+      - ./gopher-root:/gopher-root
+    environment:
+      - TITLE="Wes C's Gopher Server"
+      - PORT=70
+      - HOST_BIND_IP=0.0.0.0
+      - GOPHER_ROOT=/gopher-root
     ports:
       - '7070:70'
