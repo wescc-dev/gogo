@@ -268,12 +268,17 @@ func (s *server) trackConn(c net.Conn) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.conns[c] = struct{}{}
+	var cons = len(s.conns)
+	log.Println("New connection:", c.RemoteAddr(), "total:", cons)
+
 }
 
 func (s *server) untrackConn(c net.Conn) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.conns, c)
+	var cons = len(s.conns)
+	log.Println("Connection closed:", c.RemoteAddr(), "remaining:", cons)
 }
 
 func serveSelector(conn net.Conn, rootDir string, selector string) {
