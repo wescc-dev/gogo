@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"gopher/configuration"
 	"io"
 	"log"
 	"net"
@@ -19,36 +20,71 @@ type HandlerFunc func(ctx context.Context, c net.Conn, req string) error
 
 type Middleware func(HandlerFunc) HandlerFunc
 
-// Server is a simple gopher server
-type Server struct {
-	Addr         string
+var cfg = configuration.GetConfiguration()
+
+// server is a simple gopher server
+type server struct {
+	Hostname     string
+	BindAddr     string
+	Port         string
 	Handler      HandlerFunc
 	Middlewares  []Middleware
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	IdleTimeout  time.Duration
-
-	mu       sync.Mutex
-	listener net.Listener
-	conns    map[net.Conn]struct{}
-	shutting bool
+	GopherRoot   string
+	mu           sync.Mutex
+	listener     net.Listener
+	conns        map[net.Conn]struct{}
+	shutting     bool
 }
 
 // Wrap middleware chain
-func (s *Server) wrap(h HandlerFunc) HandlerFunc {
+func (s *server) wrap(h HandlerFunc) HandlerFunc {
 	for i := len(s.Middlewares) - 1; i >= 0; i-- {
 		h = s.Middlewares[i](h)
 	}
 	return h
 }
 
-func (s *Server) ListenAndServe(gopherRoot string) error {
+type IServer interface {
+	ListenAndServe() error
+	Close() error
+	Shutdown(ctx context.Context) error
+	ConnectionCount() int
+}
 
-	ln, err := net.Listen("tcp", s.Addr)
+func NewServer(hostname string, bindAddr string, port string, gopherRoot string) (IServer, error) {
+	if strings.TrimSpace(hostname) == "" {
+		hostname = "localhost"
+	}
+	if strings.TrimSpace(bindAddr) == "" {
+		bindAddr = "0.0.0.0"
+	}
+	if strings.TrimSpace(port) == "" {
+		port = "70"
+	}
+	if strings.TrimSpace(gopherRoot) == "" {
+		return nil, fmt.Errorf("gopherRoot cannot be empty")
+	}
+
+	return &server{
+		Hostname:   hostname,
+		BindAddr:   bindAddr,
+		Port:       port,
+		GopherRoot: gopherRoot,
+	}, nil
+}
+
+func (s *server) ListenAndServe() error {
+	if err := s.generateGopherMap(); err != nil {
+		log.Println("Error generating gophermap:", err)
+	}
+	ln, err := net.Listen("tcp", s.BindAddr+":"+s.Port)
 	if err != nil {
 		return err
 	}
-	log.Printf("gopher: listening on %s", s.Addr)
+	log.Printf("gopher: listening on %s", s.BindAddr)
 	s.mu.Lock()
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})
@@ -63,56 +99,16 @@ func (s *Server) ListenAndServe(gopherRoot string) error {
 			return err
 		}
 		s.trackConn(conn)
-		go s.handleConn(handler, conn, gopherRoot)
+		go func() {
+			err := s.handleConn(handler, conn, s.GopherRoot)
+			if err != nil {
+
+			}
+		}()
 	}
 }
 
-func (s *Server) handleConn(handler HandlerFunc, conn net.Conn, gopherRoot string) error {
-	defer s.untrackConn(conn)
-	defer conn.Close()
-
-	if s.ReadTimeout > 0 {
-		conn.SetReadDeadline(time.Now().Add(s.ReadTimeout))
-	}
-	if s.WriteTimeout > 0 {
-		conn.SetWriteDeadline(time.Now().Add(s.WriteTimeout))
-	}
-
-	ctx := context.Background()
-	if s.IdleTimeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, s.IdleTimeout)
-		defer cancel()
-	}
-	ctx = context.WithValue(ctx, "gopherRoot", gopherRoot)
-
-	reader := bufio.NewReader(conn)
-	req, err := reader.ReadString('\n')
-	if err != nil {
-		return err
-	}
-
-	var selector = strings.TrimSpace(req)
-	log.Println("Selector:", selector)
-	var _rootDir = ctx.Value("gopherRoot").(string)
-	serveSelector(conn, _rootDir, selector)
-	return nil
-
-}
-
-func (s *Server) trackConn(c net.Conn) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.conns[c] = struct{}{}
-}
-
-func (s *Server) untrackConn(c net.Conn) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.conns, c)
-}
-
-func (s *Server) Close() error {
+func (s *server) Close() error {
 	s.mu.Lock()
 	s.shutting = true
 	ln := s.listener
@@ -131,7 +127,7 @@ func (s *Server) Close() error {
 	return nil
 }
 
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *server) Shutdown(ctx context.Context) error {
 	s.mu.Lock()
 	s.shutting = true
 	ln := s.listener
@@ -158,6 +154,146 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	case <-done:
 		return nil
 	}
+}
+
+func (s *server) ConnectionCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.conns)
+}
+
+func (s *server) generateGopherMap() error {
+	srcPath := filepath.Join(s.GopherRoot, ".gophermap")
+	outPath := filepath.Join(s.GopherRoot, "gophermap")
+	log.Println("Generating gophermap:", srcPath, "->", outPath)
+
+	data, err := os.ReadFile(srcPath)
+	if err != nil {
+		return fmt.Errorf("cannot open gophermap: %w", err)
+	}
+
+	content := string(data)
+
+	// Replace simple tokens first
+	tokens := map[string]string{
+		"TITLE":   cfg.Title,
+		"VERSION": configuration.Version,
+		"HOST":    s.Hostname,
+		"BIND":    s.BindAddr,
+		"=":       "======================================================================",
+		"*":       "**********************************************************************",
+		"-":       "----------------------------------------------------------------------",
+	}
+
+	for key, val := range tokens {
+		content = strings.ReplaceAll(content, "{{"+key+"}}", val)
+	}
+
+	// Now handle {{ENTRIES}}
+	entries, err := s.generateEntries()
+	if err != nil {
+		return err
+	}
+
+	content = strings.ReplaceAll(content, "{{ENTRIES}}", entries)
+
+	// Write output
+	if err := os.WriteFile(outPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("cannot write generated gophermap: %w", err)
+	}
+
+	return nil
+}
+
+func (s *server) generateEntries() (string, error) {
+	entries := &strings.Builder{}
+
+	dir, err := os.ReadDir(s.GopherRoot)
+	if err != nil {
+		return "", fmt.Errorf("cannot read gopher root: %w", err)
+	}
+
+	for _, entry := range dir {
+		name := entry.Name()
+
+		// Skip the gophermap itself
+		if name == ".gophermap" || name == "gophermap" {
+			continue
+		}
+
+		var itemType string
+		var selector string
+
+		if entry.IsDir() {
+			itemType = "1" // directory
+			selector = "/" + name
+		} else {
+			ext := strings.ToLower(filepath.Ext(name))
+
+			switch ext {
+			case ".txt", ".md":
+				itemType = "0" // text file
+			default:
+				itemType = "9" // binary file
+			}
+
+			selector = "/" + name
+		}
+
+		// Gopher line format:
+		// <type><display>\t<selector>\t<host>\t<port>
+		fmt.Fprintf(entries, "%s%s\t%s\t%s\t%s\n",
+			itemType,
+			name,
+			selector,
+			s.Hostname,
+			s.Port,
+		)
+	}
+
+	return entries.String(), nil
+}
+
+func (s *server) handleConn(handler HandlerFunc, conn net.Conn, gopherRoot string) error {
+	defer s.untrackConn(conn)
+	defer conn.Close()
+
+	if s.ReadTimeout > 0 {
+		conn.SetReadDeadline(time.Now().Add(s.ReadTimeout))
+	}
+	if s.WriteTimeout > 0 {
+		conn.SetWriteDeadline(time.Now().Add(s.WriteTimeout))
+	}
+
+	ctx := context.Background()
+	if s.IdleTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, s.IdleTimeout)
+		defer cancel()
+	}
+	reader := bufio.NewReader(conn)
+	req, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+
+	var selector = strings.TrimSpace(req)
+	log.Println("Selector:", selector)
+	serveSelector(conn, gopherRoot, selector)
+	return nil
+
+}
+
+func (s *server) trackConn(c net.Conn) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.conns[c] = struct{}{}
+}
+
+func (s *server) untrackConn(c net.Conn) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.conns, c)
 }
 
 func serveSelector(conn net.Conn, rootDir string, selector string) {
@@ -219,7 +355,7 @@ func serveDirectory(conn net.Conn, dir string, selector string) {
 		fullSelector := filepath.Join(selector, name)
 
 		if e.IsDir() {
-			w.WriteString("1" + name + "\t" + fullSelector + "/\tlocalhost\t70\r\n")
+			w.WriteString("1" + name + "\t" + fullSelector + "/\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
 			continue
 		}
 
@@ -232,11 +368,11 @@ func serveDirectory(conn net.Conn, dir string, selector string) {
 
 		switch ext {
 		case ".png", ".jpg", ".jpeg", ".gif":
-			w.WriteString("I" + name + "\t" + fullSelector + "\tlocalhost\t70\r\n")
+			w.WriteString("I" + name + "\t" + fullSelector + "/\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
 		case ".txt", ".md", ".log":
-			w.WriteString("0" + name + "\t" + fullSelector + "\tlocalhost\t70\r\n")
+			w.WriteString("0" + name + "\t" + fullSelector + "/\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
 		default:
-			w.WriteString("9" + name + "\t" + fullSelector + "\tlocalhost\t70\r\n")
+			w.WriteString("9" + name + "\t" + fullSelector + "/\t" + cfg.Host + "\t" + cfg.Port + "\r\n")
 		}
 	}
 

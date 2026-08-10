@@ -6,6 +6,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const (
+	AppName   = "Wes C's Go Gopher Server"
+	Version   = "0.0.1"
+	Copyright = "Copyright©️ 2026 Wes C"
+	Link      = "https://wesc.neocities.org/#/gopherhole"
+)
+
 type Configuration struct {
 	Title      string
 	Host       string
