@@ -5,7 +5,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"gopher/configuration"
+	"gogopher/configuration"
+	"gogopher/utility"
 	"io"
 	"io/fs"
 	"log"
@@ -35,25 +36,22 @@ type server struct {
 	ReadWriteTimeout time.Duration
 	IdleTimeout      time.Duration
 	GopherRoot       string
-	mu               sync.Mutex
-	listener         net.Listener
-	conns            map[net.Conn]struct{}
-	shutting         bool
-}
+	startTime        time.Time
+	stopTime         time.Time
 
-// Wrap middleware chain
-func (s *server) wrap(h HandlerFunc) HandlerFunc {
-	for i := len(s.Middlewares) - 1; i >= 0; i-- {
-		h = s.Middlewares[i](h)
-	}
-	return h
+	mu              sync.Mutex
+	listener        net.Listener
+	conns           map[net.Conn]struct{}
+	clientWaitGroup sync.WaitGroup
+	acceptDone      chan struct{}
+	stopOnce        sync.Once
 }
 
 type IServer interface {
-	ListenAndServe() error
-	Close() error
-	Shutdown(ctx context.Context) error
+	Start() error
+	Stop(ctx context.Context) error
 	ConnectionCount() int
+	UpTime() time.Duration
 }
 
 func NewServer(
@@ -63,6 +61,7 @@ func NewServer(
 	gopherRoot string,
 	idleTimeout time.Duration,
 	readWriteTimeout time.Duration,
+
 	middleware []Middleware) (IServer, error) {
 
 	if strings.TrimSpace(hostname) == "" {
@@ -86,85 +85,88 @@ func NewServer(
 		IdleTimeout:      idleTimeout,
 		ReadWriteTimeout: readWriteTimeout,
 		Middlewares:      middleware,
+		clientWaitGroup:  sync.WaitGroup{},
+		acceptDone:       make(chan struct{}),
 	}, nil
 }
 
-func (s *server) ListenAndServe() error {
+func (s *server) Start() error {
 	if err := s.generateGopherMap(); err != nil {
 		log.Println("Error generating gophermap:", err)
 	}
-	ln, err := net.Listen("tcp", s.BindAddr+":"+s.Port)
+	ln, err := net.Listen("tcp4", s.BindAddr+":"+s.Port)
 	if err != nil {
 		return err
 	}
 	log.Println("gopher: listening on ", s.BindAddr+":"+s.Port)
+
+	s.Handler = s.useMiddleware(serveSelector)
 	s.mu.Lock()
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})
+	s.startTime = time.Now()
 	s.mu.Unlock()
-	handler := s.wrap(serveSelector)
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			if s.shutting {
-				return nil
-			}
-			return err
-		}
-		s.trackConn(conn)
-		go func() {
-			err := s.handleConn(handler, conn, s.GopherRoot)
-			if err != nil {
-				log.Println("Error handling connection:", err)
-			}
-		}()
-	}
-}
-
-func (s *server) Close() error {
-	s.mu.Lock()
-	s.shutting = true
-	ln := s.listener
-	s.mu.Unlock()
-
-	if ln != nil {
-		_ = ln.Close()
-	}
-
-	s.mu.Lock()
-	for c := range s.conns {
-		_ = c.Close()
-	}
-	s.mu.Unlock()
-
+	go s.acceptLoop()
 	return nil
 }
-
-func (s *server) Shutdown(ctx context.Context) error {
-	s.mu.Lock()
-	s.shutting = true
-	ln := s.listener
-	s.mu.Unlock()
-
-	if ln != nil {
-		_ = ln.Close()
-	}
-
-	done := make(chan struct{})
-
-	go func() {
-		s.mu.Lock()
-		for c := range s.conns {
-			_ = c.Close()
+func (s *server) acceptLoop() {
+	defer close(s.acceptDone)
+	for {
+		conn, err := s.listener.Accept()
+		if err != nil {
+			log.Println("Error accepting connection:", err)
+			return
 		}
+		s.clientWaitGroup.Add(1)
+		s.trackConn(conn)
+		go s.handleClientConnection(conn, s.Handler)
+	}
+}
+func (s *server) handleClientConnection(conn net.Conn, handler HandlerFunc) {
+	defer s.clientWaitGroup.Done()
+	defer s.untrackConn(conn)
+	defer conn.Close()
+	if err := s.processRequest(handler, conn, s.GopherRoot); err != nil {
+		log.Println("Error handling connection:", err)
+	}
+}
+
+func (s *server) Stop(ctx context.Context) error {
+	s.stopOnce.Do(func() {
+		log.Println("Shutting down server...")
+		s.mu.Lock()
+		ln := s.listener
 		s.mu.Unlock()
+		if ln != nil {
+			_ = ln.Close()
+		}
+	})
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-s.acceptDone:
+	}
+	s.mu.Lock()
+	conns := make([]net.Conn, 0, len(s.conns))
+	for c := range s.conns {
+		conns = append(conns, c)
+	}
+	s.mu.Unlock()
+	for _, c := range conns {
+		_ = c.Close()
+	}
+	done := make(chan struct{})
+	go func() {
+		s.clientWaitGroup.Wait()
 		close(done)
 	}()
-
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-done:
+		s.mu.Lock()
+		s.stopTime = time.Now()
+		s.mu.Unlock()
 		return nil
 	}
 }
@@ -173,6 +175,61 @@ func (s *server) ConnectionCount() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return len(s.conns)
+}
+
+func (s *server) UpTime() time.Duration {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	t := s.stopTime.Sub(s.startTime)
+	return t
+}
+
+func (s *server) processRequest(handler HandlerFunc, conn net.Conn, gopherRoot string) error {
+	if s.ReadWriteTimeout > 0 {
+		_ = conn.SetReadDeadline(time.Now().Add(s.ReadWriteTimeout))
+	}
+
+	ctx := context.Background()
+	if s.IdleTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, s.IdleTimeout)
+		defer cancel()
+		// Apply the timeout to the connection
+		_ = conn.SetReadDeadline(time.Now().Add(s.IdleTimeout))
+	}
+	reader := bufio.NewReader(conn)
+	req, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+
+	var selector = strings.TrimSpace(req)
+	log.Println("Selector:", selector)
+	return handler(conn, gopherRoot, selector, s.ReadWriteTimeout)
+}
+
+func (s *server) trackConn(c net.Conn) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.conns[c] = struct{}{}
+	var cons = len(s.conns)
+	log.Println("New connection:", c.RemoteAddr(), "total:", cons)
+
+}
+
+func (s *server) untrackConn(c net.Conn) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.conns, c)
+	var cons = len(s.conns)
+	log.Println("Connection closed:", c.RemoteAddr(), "remaining:", cons)
+}
+
+func (s *server) useMiddleware(h HandlerFunc) HandlerFunc {
+	for i := len(s.Middlewares) - 1; i >= 0; i-- {
+		h = s.Middlewares[i](h)
+	}
+	return h
 }
 
 func (s *server) generateGopherMap() error {
@@ -238,54 +295,10 @@ func (s *server) generateEntries() (string, error) {
 	w := bufio.NewWriter(&entriesBuf)
 	sort.Strings(entries)
 	for _, entry := range entries {
-		w.WriteString(entry)
+		_, _ = w.WriteString(entry)
 	}
-	w.Flush()
+	_ = w.Flush()
 	return entriesBuf.String(), nil
-}
-
-func (s *server) handleConn(handler HandlerFunc, conn net.Conn, gopherRoot string) error {
-	defer s.untrackConn(conn)
-	defer conn.Close()
-
-	if s.ReadWriteTimeout > 0 {
-		conn.SetReadDeadline(time.Now().Add(s.ReadWriteTimeout))
-	}
-
-	ctx := context.Background()
-	if s.IdleTimeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, s.IdleTimeout)
-		defer cancel()
-		// Apply the timeout to the connection
-		conn.SetReadDeadline(time.Now().Add(s.IdleTimeout))
-	}
-	reader := bufio.NewReader(conn)
-	req, err := reader.ReadString('\n')
-	if err != nil {
-		return err
-	}
-
-	var selector = strings.TrimSpace(req)
-	log.Println("Selector:", selector)
-	return handler(conn, gopherRoot, selector, s.ReadWriteTimeout)
-}
-
-func (s *server) trackConn(c net.Conn) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.conns[c] = struct{}{}
-	var cons = len(s.conns)
-	log.Println("New connection:", c.RemoteAddr(), "total:", cons)
-
-}
-
-func (s *server) untrackConn(c net.Conn) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.conns, c)
-	var cons = len(s.conns)
-	log.Println("Connection closed:", c.RemoteAddr(), "remaining:", cons)
 }
 
 func serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.Duration) error {
@@ -310,13 +323,13 @@ func serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.
 	}
 
 	// If it's a directory
-	if isDir(path) {
+	if utility.IsDirectory(path) {
 		serveDirectory(conn, path, selector, timeOut)
 		return nil
 	}
 
 	// If it's a file
-	if fileExists(path) {
+	if utility.FileExists(path) {
 		serveFile(conn, path, timeOut)
 		return nil
 	}
@@ -329,7 +342,7 @@ func serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.
 func serveDirectory(conn net.Conn, dir string, selector string, timeOut time.Duration) {
 	// If gophermap exists, serve it
 	mapPath := filepath.Join(dir, "gophermap")
-	if fileExists(mapPath) {
+	if utility.FileExists(mapPath) {
 		serveFile(conn, mapPath, timeOut)
 		return
 	}
@@ -337,7 +350,12 @@ func serveDirectory(conn net.Conn, dir string, selector string, timeOut time.Dur
 	// Otherwise list directory
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		fmt.Fprintf(conn, "3Error reading directory"+"\t"+dir+"/\t"+cfg.Host+"\t"+cfg.Port+"\r\n")
+		_, err := fmt.Fprintf(conn,
+			"3Error reading directory\t%s/\t%s\t%s\r\n",
+			dir, cfg.Host, cfg.Port)
+		if err != nil {
+			log.Println(err)
+		}
 		return
 	}
 	var buf bytes.Buffer
@@ -420,10 +438,17 @@ func serveFile(conn net.Conn, path string, timeout time.Duration) {
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		io.WriteString(conn, "3Error reading file.\r\n")
+		_, err := io.WriteString(conn, "3Error reading file.\r\n")
+		if err != nil {
+			return
+		}
 		return
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+		}
+	}(f)
 
 	buf := make([]byte, 4096) // 4 KB chunks
 
@@ -460,14 +485,4 @@ func serveFile(conn net.Conn, path string, timeout time.Duration) {
 	if _, err := io.WriteString(conn, ".\r\n"); err != nil {
 		log.Println("Write aborted:", err)
 	}
-}
-
-func isDir(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
-}
-
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
 }

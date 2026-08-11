@@ -12,5 +12,7 @@ services:
       - PORT=70
       - HOST_BIND_IP=0.0.0.0
       - GOPHER_ROOT=/gopher-root
+      - IDLE_TIMEOUT_SECONDS=10
+      - READWRITE_TIMEOUT_SECONDS=30
     ports:
       - '7070:70'

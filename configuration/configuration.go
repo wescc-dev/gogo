@@ -16,13 +16,14 @@ const (
 )
 
 type Configuration struct {
-	Title            string
-	Host             string
-	HostBindIp       string // In a Docker container, the ip will be different from the host ip
-	Port             string
-	GopherRoot       string
-	IdleTimeout      time.Duration
-	ReadWriteTimeout time.Duration
+	Title              string
+	Host               string
+	BindAddress        string // In a Docker container, the ip will be different from the host ip
+	Port               string
+	GopherRoot         string
+	FireWallConfigFile string
+	IdleTimeout        time.Duration
+	ReadWriteTimeout   time.Duration
 }
 
 var _configuration *Configuration = nil
@@ -45,13 +46,14 @@ func GetConfiguration() Configuration {
 			readWriteTimeout = val
 		}
 		_configuration = &Configuration{
-			Title:            getEnv("TITLE", "Wes C's Gopher Hole"),
-			Host:             getEnv("HOST", "localhost"),
-			HostBindIp:       getEnv("HOST_BIND_IP", "0.0.0.0"),
-			Port:             getEnv("PORT", "70"),
-			GopherRoot:       getEnv("GOPHER_ROOT", "./gopher-root"),
-			IdleTimeout:      time.Duration(idle) * time.Second,
-			ReadWriteTimeout: time.Duration(readWriteTimeout) * time.Second,
+			Title:              getEnv("TITLE", "Wes C's Gopher Hole"),
+			Host:               getEnv("HOST", "localhost"),
+			BindAddress:        getEnv("HOST_BIND_IP", "0.0.0.0"),
+			Port:               getEnv("PORT", "70"),
+			GopherRoot:         getEnv("GOPHER_ROOT", "./gopher-root"),
+			FireWallConfigFile: getEnv("FIREWALL_CONFIG_FILE", "./firewall-config.json"),
+			IdleTimeout:        time.Duration(idle) * time.Second,
+			ReadWriteTimeout:   time.Duration(readWriteTimeout) * time.Second,
 		}
 	}
 	return *_configuration
