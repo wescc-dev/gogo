@@ -5,6 +5,7 @@ import (
 	"gopher/configuration"
 	"gopher/server"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -43,11 +44,21 @@ func printConfiguration() {
 	log.Println("----------------------------------")
 
 }
-
 func startServer() (server.IServer, chan struct{}) {
 	log.Println("Starting server...")
 	serverShutdown := make(chan struct{})
-	var svr, err = server.NewServer(cfg.Host, cfg.HostBindIp, cfg.Port, cfg.GopherRoot)
+	var svr, err = server.NewServer(cfg.Host, cfg.HostBindIp, cfg.Port, cfg.GopherRoot,
+		cfg.IdleTimeout,
+		cfg.ReadWriteTimeout,
+		[]server.Middleware{
+			func(next server.HandlerFunc) server.HandlerFunc {
+				return func(conn net.Conn, rootDir string, selector string, timeout time.Duration) error {
+					log.Println("Request:", conn.RemoteAddr(), selector)
+					r := next(conn, rootDir, selector, timeout)
+					log.Println("Response:", conn.RemoteAddr(), selector)
+					return r
+				}
+			}})
 	if err != nil {
 		log.Fatal(err)
 	}
