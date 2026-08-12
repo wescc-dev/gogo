@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="06fb1b36-5d90-4178-b431-0355858e5c2b" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gopher-root/.gophermap" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/gopher-root/gophermap" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/gopher-root/test.txt" beforeDir="false" />
     </list>
@@ -16,6 +15,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="20" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="GOROOT" url="file:///usr/local/go" />
@@ -114,7 +114,7 @@
     "com.jetbrains.opentelemetry.toolwindow.stripe.promo": "true",
     "git-widget-placeholder": "main",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/wesclyburn",
+    "last_opened_file_path": "/Users/wesclyburn/repos/gogopher/gopher-root",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
@@ -123,8 +123,8 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/gopher-root/Images" />
       <recent name="$PROJECT_DIR$/gopher-root" />
+      <recent name="$PROJECT_DIR$/gopher-root/Images" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/gopher-root" />
@@ -173,6 +173,7 @@
       <workItem from="1786519883136" duration="29000" />
       <workItem from="1786519914935" duration="2663000" />
       <workItem from="1786522589610" duration="23000" />
+      <workItem from="1786522619888" duration="181000" />
     </task>
     <servers />
   </component>
