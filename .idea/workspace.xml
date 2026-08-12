@@ -4,18 +4,13 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="06fb1b36-5d90-4178-b431-0355858e5c2b" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gopher-root/gophermap" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gopher-root/test.txt" beforeDir="false" />
-    </list>
+    <list default="true" id="06fb1b36-5d90-4178-b431-0355858e5c2b" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="20" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="GOROOT" url="file:///usr/local/go" />
@@ -114,7 +109,7 @@
     "com.jetbrains.opentelemetry.toolwindow.stripe.promo": "true",
     "git-widget-placeholder": "main",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/wesclyburn/repos/gogopher/gopher-root",
+    "last_opened_file_path": "/Users/wesclyburn/repos/gogopher",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
@@ -174,6 +169,7 @@
       <workItem from="1786519914935" duration="2663000" />
       <workItem from="1786522589610" duration="23000" />
       <workItem from="1786522619888" duration="181000" />
+      <workItem from="1786522998243" duration="10000" />
     </task>
     <servers />
   </component>
