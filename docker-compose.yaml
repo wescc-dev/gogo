@@ -20,4 +20,3 @@ services:
       - '70:70'
 volumes:
   gopher-root:
-    
