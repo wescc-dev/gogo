@@ -5,14 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="06fb1b36-5d90-4178-b431-0355858e5c2b" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/configuration/configuration.go" beforeDir="false" afterPath="$PROJECT_DIR$/configuration/configuration.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gopher-root/.gophermap" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/gopher-root/gophermap" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/gopher-root/test.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,61 +28,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0008862662920537" />
-      <entry key="MS500" value="1.2731645640892846" />
-      <entry key="S2" value="2.135974396685281" />
-      <entry key="S5" value="2.848796168984018" />
-      <entry key="S10" value="3.5806107266849647" />
-      <entry key="S30" value="4.851405909195906" />
-      <entry key="S60" value="5.816662761930515" />
-      <entry key="M2" value="7.801374677824413" />
-      <entry key="M5" value="15.146832616581996" />
-      <entry key="M10" value="29.770102232667107" />
-      <entry key="M15" value="47.374810917667936" />
-      <entry key="M30" value="99.13099386160457" />
-      <entry key="H1" value="163.30447414926502" />
-      <entry key="H2" value="216.95592479307257" />
-      <entry key="H4" value="252.2513199688557" />
-      <entry key="D1" value="287.2861750886247" />
-      <entry key="W1" value="293.8825534676953" />
+      <entry key="MS100" value="1.0000000000009681" />
+      <entry key="MS500" value="1.0039552922300947" />
+      <entry key="S2" value="1.252712178883641" />
+      <entry key="S5" value="1.6611187955592577" />
+      <entry key="S10" value="2.117523170691383" />
+      <entry key="S30" value="3.187354440233286" />
+      <entry key="S60" value="3.9158430891961076" />
+      <entry key="M2" value="4.8759152839424775" />
+      <entry key="M5" value="8.61217666967948" />
+      <entry key="M10" value="18.603017359326653" />
+      <entry key="M15" value="32.1459355705906" />
+      <entry key="M30" value="78.87753913133707" />
+      <entry key="H1" value="147.4692671925767" />
+      <entry key="H2" value="211.27337247607713" />
+      <entry key="H4" value="255.78680173737874" />
+      <entry key="D1" value="301.68390675994436" />
+      <entry key="W1" value="310.50106615913955" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="3.561334844739637E-22" />
-      <entry key="MS500" value="5.1324244095075334E-5" />
-      <entry key="S2" value="0.08464097168355579" />
-      <entry key="S5" value="0.372419365824911" />
-      <entry key="S10" value="0.6102710539273171" />
-      <entry key="S30" value="0.8815806003582726" />
-      <entry key="S60" value="1.1792639077810494" />
-      <entry key="M2" value="1.6814081849833968" />
-      <entry key="M5" value="2.4583825332120255" />
-      <entry key="M10" value="3.242472108632532" />
-      <entry key="M15" value="3.9189947357572903" />
-      <entry key="M30" value="5.733646187646831" />
-      <entry key="H1" value="8.040212014582877" />
-      <entry key="H2" value="10.031780440970481" />
-      <entry key="H4" value="11.365516653735577" />
-      <entry key="D1" value="12.703727091990311" />
-      <entry key="W1" value="12.957047595068197" />
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="1.9255930197176955E-114" />
+      <entry key="S5" value="3.2645686157736908E-46" />
+      <entry key="S10" value="1.8068117335633416E-23" />
+      <entry key="S30" value="2.6288828543423106E-8" />
+      <entry key="S60" value="1.7183110964968747E-4" />
+      <entry key="M2" value="0.018131865130839166" />
+      <entry key="M5" value="0.45824740169950584" />
+      <entry key="M10" value="1.6269571643882117" />
+      <entry key="M15" value="2.6853215301169424" />
+      <entry key="M30" value="5.168279531572609" />
+      <entry key="H1" value="8.185775107702495" />
+      <entry key="H2" value="10.856176859317694" />
+      <entry key="H4" value="12.693523192059697" />
+      <entry key="D1" value="14.577500240942886" />
+      <entry key="W1" value="14.93862803037305" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.0010221709895920652" />
-      <entry key="MS500" value="0.35504333137987604" />
-      <entry key="S2" value="1.5290436192337418" />
-      <entry key="S5" value="2.71261801767434" />
-      <entry key="S10" value="3.7887637454175986" />
-      <entry key="S30" value="5.495766158105454" />
-      <entry key="S60" value="6.844829133387885" />
-      <entry key="M2" value="9.390372544451584" />
-      <entry key="M5" value="17.553530095710574" />
-      <entry key="M10" value="32.9737654627914" />
-      <entry key="M15" value="51.25928959909513" />
-      <entry key="M30" value="104.83445893466039" />
-      <entry key="H1" value="171.3205163250507" />
-      <entry key="H2" value="226.9714596351784" />
-      <entry key="H4" value="263.6072750838161" />
-      <entry key="D1" value="299.9880629647919" />
-      <entry key="W1" value="306.83933160227684" />
+      <entry key="MS100" value="0.002919627439675177" />
+      <entry key="MS500" value="0.3151465298764719" />
+      <entry key="S2" value="0.9991800336797962" />
+      <entry key="S5" value="1.5504631389325862" />
+      <entry key="S10" value="2.060285859528778" />
+      <entry key="S30" value="3.167037994751417" />
+      <entry key="S60" value="3.9049191511749948" />
+      <entry key="M2" value="4.885795800615992" />
+      <entry key="M5" value="9.05588298897905" />
+      <entry key="M10" value="20.207879353729584" />
+      <entry key="M15" value="34.80644518263321" />
+      <entry key="M30" value="84.01922866370253" />
+      <entry key="H1" value="155.63147311736682" />
+      <entry key="H2" value="222.11275736023026" />
+      <entry key="H4" value="268.4701205082077" />
+      <entry key="D1" value="316.2593878065498" />
+      <entry key="W1" value="325.4393968773854" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -100,33 +96,34 @@
     <option name="openDirectoriesWithSingleClick" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Go Build.go build gogopher.executor&quot;: &quot;Debug&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.GoLinterPluginOnboardingV2&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.GoLinterPluginStorageMigration&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.GoOptimizationToolWindowEnableInLayout.v333333&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.analysis.ui.options.defaults&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;com.jetbrains.opentelemetry.toolwindow.stripe.promo&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/wesclyburn/repos/gogopher/gopher-root&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;advanced.settings&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Go Build.go build gogopher.executor": "Debug",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.GoLinterPluginOnboardingV2": "true",
+    "RunOnceActivity.GoLinterPluginStorageMigration": "true",
+    "RunOnceActivity.GoOptimizationToolWindowEnableInLayout.v333333": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.analysis.ui.options.defaults": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.jetbrains.opentelemetry.toolwindow.stripe.promo": "true",
+    "git-widget-placeholder": "main",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "/Users/wesclyburn",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.fileTypes"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/gopher-root/Images" />
       <recent name="$PROJECT_DIR$/gopher-root" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -174,6 +171,8 @@
       <workItem from="1786518493317" duration="29000" />
       <workItem from="1786518526133" duration="1350000" />
       <workItem from="1786519883136" duration="29000" />
+      <workItem from="1786519914935" duration="2663000" />
+      <workItem from="1786522589610" duration="23000" />
     </task>
     <servers />
   </component>
