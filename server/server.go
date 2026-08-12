@@ -53,6 +53,7 @@ type IServer interface {
 	ConnectionCount() int
 	UpTime() time.Duration
 	AddMiddleware(middleware Middleware)
+	IsStarted() bool
 }
 
 func NewServer(
@@ -112,7 +113,11 @@ func (s *server) Start() error {
 func (s *server) AddMiddleware(middleware Middleware) {
 	s.Middlewares = append(s.Middlewares, middleware)
 }
-
+func (s *server) IsStarted() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.listener != nil
+}
 func (s *server) Stop(ctx context.Context) error {
 	s.stopOnce.Do(func() {
 		log.Println("Shutting down server...")
@@ -129,6 +134,7 @@ func (s *server) Stop(ctx context.Context) error {
 	case <-s.acceptDone:
 	}
 	s.mu.Lock()
+	s.listener = nil
 	conns := make([]net.Conn, 0, len(s.conns))
 	for c := range s.conns {
 		conns = append(conns, c)
