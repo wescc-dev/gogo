@@ -3,3 +3,5 @@ gogopher
 .idea/
 docker-build.sh
 gophermap
+.run/
+
