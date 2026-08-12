@@ -1,4 +1,5 @@
 .env
 gogopher
 .idea/
+docker-build.sh
 gophermap
