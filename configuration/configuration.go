@@ -13,11 +13,12 @@ const (
 	Version   = "0.0.1"
 	Copyright = "Copyright©️ 2026 Wes C"
 	Link      = "https://wesc.neocities.org/#/gopherhole"
+	Footer    = "i                   ------ Go Gopher Server© Wes C. -----\t\terror.host\t1\r\n"
 )
 
 type Configuration struct {
 	Title              string
-	Host               string
+	HostName           string
 	BindAddress        string // In a Docker container, the ip will be different from the host ip
 	Port               string
 	GopherRoot         string
@@ -47,11 +48,11 @@ func GetConfiguration() Configuration {
 		}
 		_configuration = &Configuration{
 			Title:              getEnv("TITLE", "Wes C's Gopher Hole"),
-			Host:               getEnv("HOST", "localhost"),
+			HostName:           getEnv("HOSTNAME", "localhost"),
 			BindAddress:        getEnv("HOST_BIND_IP", "0.0.0.0"),
 			Port:               getEnv("PORT", "70"),
-			GopherRoot:         getEnv("GOPHER_ROOT", "./gopher-root"),
-			FireWallConfigFile: getEnv("FIREWALL_CONFIG_FILE", "./firewall-config.json"),
+			GopherRoot:         getEnv("GOPHER_ROOT", "gopher-root"),
+			FireWallConfigFile: getEnv("FIREWALL_CONFIG_FILE", "firewall-config.json"),
 			IdleTimeout:        time.Duration(idle) * time.Second,
 			ReadWriteTimeout:   time.Duration(readWriteTimeout) * time.Second,
 		}

@@ -32,7 +32,7 @@ func printConfiguration() {
 	log.Println(configuration.Link)
 	log.Println("---------- Configuration ----------")
 	log.Println("Title:", cfg.Title)
-	log.Println("Host:", cfg.Host)
+	log.Println("Host Name:", cfg.HostName)
 	log.Println("Host bind ip:", cfg.BindAddress)
 	log.Println("Port:", cfg.Port)
 	log.Println("Gopher root:", cfg.GopherRoot)
@@ -45,7 +45,7 @@ func printConfiguration() {
 
 func startServer() server.IServer {
 	log.Println("Starting server...")
-	var svr, err = server.NewServer(cfg.Host, cfg.BindAddress, cfg.Port, cfg.GopherRoot,
+	var svr, err = server.NewServer(cfg.HostName, cfg.BindAddress, cfg.Port, cfg.GopherRoot,
 		cfg.IdleTimeout,
 		cfg.ReadWriteTimeout)
 	if svr != nil {
