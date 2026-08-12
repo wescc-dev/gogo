@@ -45,6 +45,7 @@ type server struct {
 	clientWaitGroup sync.WaitGroup
 	acceptDone      chan struct{}
 	stopOnce        sync.Once
+	stopRequested   bool
 }
 
 type IServer interface {
@@ -87,6 +88,7 @@ func NewServer(
 		Middlewares:      []Middleware{},
 		clientWaitGroup:  sync.WaitGroup{},
 		acceptDone:       make(chan struct{}),
+		stopRequested:    false,
 	}, nil
 }
 
@@ -105,6 +107,7 @@ func (s *server) Start() error {
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})
 	s.startTime = time.Now()
+	s.stopRequested = false
 	s.mu.Unlock()
 	go s.acceptLoop()
 	return nil
@@ -123,6 +126,7 @@ func (s *server) Stop(ctx context.Context) error {
 		log.Println("Shutting down server...")
 		s.mu.Lock()
 		ln := s.listener
+		s.stopRequested = true
 		s.mu.Unlock()
 		if ln != nil {
 			_ = ln.Close()
@@ -177,7 +181,11 @@ func (s *server) acceptLoop() {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			log.Println("Error accepting connection:", err)
+			if s.stopRequested {
+				log.Println("Server stopped")
+			} else {
+				log.Println("Error accepting connection:", err)
+			}
 			return
 		}
 		s.clientWaitGroup.Add(1)
@@ -320,10 +328,10 @@ func serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.
 		return nil
 	}
 	clean := filepath.Clean("/" + selector) // force selector to be relative
-	path := filepath.Join(rootDir, clean)
+	cleanPath := filepath.Join(rootDir, clean)
 
 	realRoot, _ := filepath.Abs(rootDir)
-	realPath, _ := filepath.Abs(path)
+	realPath, _ := filepath.Abs(cleanPath)
 
 	if !strings.HasPrefix(realPath, realRoot) {
 		_, err := io.WriteString(conn, "3Access denied.\r\n")
@@ -334,14 +342,14 @@ func serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.
 	}
 
 	// If it's a directory
-	if utility.IsDirectory(path) {
-		serveDirectory(conn, path, selector, timeOut)
+	if utility.IsDirectory(cleanPath) {
+		serveDirectory(conn, cleanPath, selector, timeOut)
 		return nil
 	}
 
 	// If it's a file
-	if utility.FileExists(path) {
-		serveFile(conn, path, timeOut)
+	if utility.FileExists(cleanPath) {
+		serveFile(conn, cleanPath, timeOut)
 		return nil
 	}
 
@@ -418,7 +426,7 @@ func writeBanner(conn net.Conn, timeOut time.Duration) {
 
 func writeFooter(conn net.Conn, timeOut time.Duration) {
 	defer conn.SetReadDeadline(time.Time{})
-	conn.SetWriteDeadline(time.Now().Add(timeOut))
+	_ = conn.SetWriteDeadline(time.Now().Add(timeOut))
 	if _, err := conn.Write([]byte(".\r\n")); err != nil {
 		log.Println(err)
 		return
