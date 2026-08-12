@@ -245,8 +245,12 @@ func (s *server) useMiddleware(h HandlerFunc) HandlerFunc {
 func (s *server) generateGopherMap() error {
 	srcPath := filepath.Join(s.GopherRoot, ".gophermap")
 	outPath := filepath.Join(s.GopherRoot, "gophermap")
-	log.Println("Generating gophermap:", srcPath, "->", outPath)
-
+	if info, err := os.Stat(s.GopherRoot); !(err == nil && info.IsDir()) {
+		err := os.MkdirAll(s.GopherRoot, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("GopherRoot %s does not exist and could not be created. No files will be served", s.GopherRoot)
+		}
+	}
 	data, err := os.ReadFile(srcPath)
 	if err != nil {
 		return fmt.Errorf("cannot open gophermap: %w", err)
@@ -350,6 +354,7 @@ func serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.
 }
 
 func serveDirectory(conn net.Conn, dir string, selector string, timeOut time.Duration) {
+	defer conn.SetReadDeadline(time.Time{})
 	// If gophermap exists, serve it
 	mapPath := filepath.Join(dir, "gophermap")
 	if utility.FileExists(mapPath) {
@@ -360,44 +365,44 @@ func serveDirectory(conn net.Conn, dir string, selector string, timeOut time.Dur
 	// Otherwise list directory
 	entries, err := os.ReadDir(dir)
 	if err != nil {
+		log.Println(err)
 		_, err := fmt.Fprintf(conn,
 			"3Error reading directory\t%s/\t%s\t%s\r\n",
 			dir, cfg.Host, cfg.Port)
 		if err != nil {
 			log.Println(err)
 		}
+
 		return
 	}
-	var buf bytes.Buffer
-	w := bufio.NewWriter(&buf)
-	var entires []string
+	// Sort entries by name, case-insensitive
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name() < entries[j].Name()
+	})
 	for _, e := range entries {
 		if gopherEntry, err := buildGopherEntry(e, selector, cfg.Host, cfg.Port); err != nil {
 			log.Println(err)
 			continue
 		} else {
-			entires = append(entires, gopherEntry)
-
+			if err = conn.SetWriteDeadline(time.Now().Add(timeOut)); err != nil {
+				return
+			}
+			if _, err := conn.Write([]byte(gopherEntry)); err != nil {
+				log.Println(err)
+				return
+			}
 		}
 	}
-	sort.Strings(entires)
-	for entry := range entires {
-		w.WriteString(entires[entry])
-	}
+	writeFooter(conn, timeOut)
+}
 
-	if _, err := w.WriteString(".\r\n"); err != nil {
+func writeFooter(conn net.Conn, timeOut time.Duration) {
+	defer conn.SetReadDeadline(time.Time{})
+	conn.SetWriteDeadline(time.Now().Add(timeOut))
+	if _, err := conn.Write([]byte(".\r\n")); err != nil {
 		log.Println(err)
 		return
 	}
-	if err := w.Flush(); err != nil {
-		log.Println("Error writing directory contents:", err)
-		return
-	}
-	if _, err := conn.Write(buf.Bytes()); err != nil {
-		log.Println("connection write error:", err)
-		return
-	}
-
 }
 
 func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) (string, error) {
@@ -443,7 +448,10 @@ func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) 
 func serveFile(conn net.Conn, path string, timeout time.Duration) {
 	if strings.HasSuffix(path, ".gophermap") ||
 		strings.HasSuffix(path, ".gophermap") {
-		io.WriteString(conn, "3Access denied.\r\n")
+		_, err := io.WriteString(conn, "3Access denied.\r\n")
+		if err != nil {
+			return
+		}
 		return
 	}
 	f, err := os.Open(path)
@@ -460,13 +468,13 @@ func serveFile(conn net.Conn, path string, timeout time.Duration) {
 		}
 	}(f)
 
-	buf := make([]byte, 4096) // 4 KB chunks
+	buf := make([]byte, 4*1024) // 4 KB chunks
 
 	for {
 		// Read next chunk
 		n, err := f.Read(buf)
 		if n > 0 {
-			// Apply timeout for each write
+			// Apply timeout for each write operation
 			err := conn.SetWriteDeadline(time.Now().Add(timeout))
 			if err != nil {
 				return
@@ -477,7 +485,7 @@ func serveFile(conn net.Conn, path string, timeout time.Duration) {
 				return
 			}
 
-			// Clear deadline after successful write
+			// Clear deadline after successful write operation
 			if err := conn.SetWriteDeadline(time.Time{}); err != nil {
 				// safe to ignore
 			}
