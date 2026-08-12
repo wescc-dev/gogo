@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"gogopher/configuration"
-	"gogopher/middleware"
-	"gogopher/server"
-	"gogopher/utility"
+	"gogopher/src/configuration"
+	"gogopher/src/middleware"
+	"gogopher/src/server"
+	"gogopher/src/utility"
 	"log"
 	"os"
 	"os/signal"

@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"gogopher/configuration"
-	"gogopher/security"
-	"gogopher/server"
+	"gogopher/src/configuration"
+	"gogopher/src/security"
+	"gogopher/src/server"
 	"log"
 	"net"
 	"time"

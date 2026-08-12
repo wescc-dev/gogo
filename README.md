@@ -12,7 +12,7 @@ GoGopher is provided under the MIT License. See the [LICENSE](LICENSE) file incl
 2. Build
 
 ```
-go build .
+go build -o gogopher ./src
 ```
 
 3. Run
