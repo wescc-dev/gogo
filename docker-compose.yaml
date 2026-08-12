@@ -6,7 +6,7 @@ services:
       dockerfile: ./Dockerfile
     container_name: "gogopher"
     volumes:
-      - ./gopher-root:/gopher-root
+      - gopher-root:/gopher-root
     environment:
       - TITLE="Wes C's Gopher Server"
       - HOSTNAME=localhost
@@ -17,4 +17,7 @@ services:
       - IDLE_TIMEOUT_SECONDS=10
       - READWRITE_TIMEOUT_SECONDS=30
     ports:
-      - '7070:70'
+      - '70:70'
+volumes:
+  gopher-root:
+    
