@@ -1,9 +1,7 @@
 name: gogopher
 services:
   gogopher:
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+    image: dbppgpmdtacr/gogopher:latest
     container_name: "gogopher"
     volumes:
       - gopher-root:/gopher-root
