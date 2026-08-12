@@ -406,6 +406,7 @@ func sortDirectoryEntries(entries []os.DirEntry) {
 		return entries[i].Name() < entries[j].Name()
 	})
 }
+
 func writeBanner(conn net.Conn, timeOut time.Duration) {
 	defer conn.SetReadDeadline(time.Time{})
 	conn.SetWriteDeadline(time.Now().Add(timeOut))
@@ -414,6 +415,7 @@ func writeBanner(conn net.Conn, timeOut time.Duration) {
 		return
 	}
 }
+
 func writeFooter(conn net.Conn, timeOut time.Duration) {
 	defer conn.SetReadDeadline(time.Time{})
 	conn.SetWriteDeadline(time.Now().Add(timeOut))
