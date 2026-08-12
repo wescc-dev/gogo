@@ -2,6 +2,10 @@
 
 An effective Gopher server written in Go by Wes C.
 
+## LICENSE
+
+GoGopher is provided under the MIT License. See the [LICENSE](LICENSE) file including in this repository. 
+
 ## Build and Run
 
 1. Install the latest Go SDK from https://golang.com
@@ -43,9 +47,11 @@ READWRITE_TIMEOUT_SECONDS=30
 - **HOST_BIND_IP** is the IP address that the server listens for client requests.
   It may or may not correspnd to HOSTNAME. For example, if running in a Docker container, the HOSTNAME may resolve to the host's IP address while GoGopher is llistening on a Docker network address. (Inside a container, 0.0.0.0 is the simplest).
 
-- **GOPHER_ROOT** is the root directory of the documents you want to provide through Gopher. **Anything in this directory hierarchy is intended to be accessed by the public in clear text.** The one exception is that GoGopher will not serve any files or directories beginning with a periond (.) So, for example *gopher-root/public/.private.text* will **not** be served.
+- **GOPHER_ROOT** is the root directory of the documents you want to provide through Gopher. **Anything in this directory hierarchy is intended to be accessed by the public in clear text.** 
+  The one exception is that GoGopher will **not** serve any files or directories beginning with a periond (.) 
+  So, for example *gopher-root/public/.private.text* will **not** be served.
 
-- **FIREWALL_CONFIG_FILE** is the the file containing the firewall rules, which control what IP addresses are allowed to connect to your GoGopher server. (See below)
+- **FIREWALL_CONFIG_FILE** is the file containing the firewall rules, which control what IP addresses are allowed to connect to your GoGopher server. (See below.)
 
 - **IDLE_TIMEOUT_SECONDS** is the number of seconds to wait for client request to start. If no request is received before this time, the connection is closed. This prevents malicious users from opening thousands of connections and idling indefinitely and exhausitng your connections. *(Note: This is often called "time to first byte")*
 
@@ -53,11 +59,11 @@ READWRITE_TIMEOUT_SECONDS=30
 
 ### Firewall
 
-Gopher is an inherently insecure protocol. GoGopher provides an application-level protocol so that operators can at least control what is allowed to connect to the server and request its documents. These rules are confiured in the file specified by the FIREWALL_CONFIG_FILE environment variable. By default, this is *`firewall-config.cfg`*
+Gopher is an inherently insecure protocol. GoGopher provides an application-level firewall so that operators can at least control what is allowed to connect to the server and request its documents. These rules are confiured in the file specified by the FIREWALL_CONFIG_FILE environment variable. By default, this is *`firewall-config.cfg`*
 
 Reasonable settings are in the default file: firewall is **enabled**, in **whitelist** mode, and allows connections only from the **local machine and local network**. 
 
-GoGopher will not immediately be open to the internet without the operator explicitly configruing the firewall to allow it.
+**GoGopher will not immediately be open to the internet without the operator explicitly configruing the firewall to allow it.**
 
 ```firewall-config.json
 {
@@ -74,7 +80,13 @@ GoGopher will not immediately be open to the internet without the operator expli
 }
 ```
 
-For production, the operatoe will probably want to set it to blacklist mode and add blockedIps as needed. Setting **enabled** to *false* will disable the firewall completely, allowing connections from any client anywhere in the universe.
+For production, the operator will probably want to set it to *blacklist* mode and add blockedIps as needed. Setting **enabled** to *false* will disable the firewall completely, allowing connections from any client anywhere in the universe.
+
+Mode can be set to either 
+
+- **whitelist** - only IP address in the "allowedIps" list can connect. Others will be dropped.
+
+- **blacklist** IP addreses in the "blockedIps" list will be dropped. All others can connect.
 
 IP Addresses can be individual addresses, a range in CIDR notation, or wildcard (*) placeholders.
 
@@ -98,10 +110,89 @@ At startup, GoGopher generates the gophermap by substituting *tokens* with the v
 
 # Docker
 
-GoGopher supports running in a Docker container.
+GoGopher supports running in a Docker container. 
+
+### Docker Pull
+
+The latest image is available with docker pull. 
 
 ```
-docker run
+docker pull dbppgpmdtacr/gogopher:latest
 ```
 
+You should then configure the network, ports, volume, and environment variable when you run the image.
 
+See above for the **environment variables**
+
+### Docker Compose
+
+Instead of pulling and configuring the image when you run it, you can run the default image with the *docker-compose.yaml* file in your git working directory of this repository.
+
+Be sure to set the network, ports, volume, and environment variables to suit.
+
+```
+name: gogopher  
+services:  
+  gogopher:  
+    image: dbppgpmdtacr/gogopher:latest  
+    container_name: "gogopher"  
+    volumes:  
+      - gopher-root:/gopher-root  
+    environment:  
+      - TITLE="Wes C's Gopher Server"  
+      - HOSTNAME=localhost  
+      - HOST_BIND_IP=0.0.0.0  
+      - PORT=70  
+      - GOPHER_ROOT=/gopher-root  
+      - FIREWALL_CONFIG_FILE=firewall-config.json  
+      - IDLE_TIMEOUT_SECONDS=10  
+      - READWRITE_TIMEOUT_SECONDS=30  
+    ports:  
+      - '70:70'  
+volumes:  
+  gopher-root:
+```
+
+#### Setup
+
+Because GoGopher's purpose is to serve documents, it is recommended that operaters create a bind mount for GOPHER_ROOT directory so that documents are more easily managed outside the docker container. It will require Read permissions for directories and files.
+
+Example, change the docker-compose.yaml file to map a host volume to the container volume named in GOPHER_ROOT (/gopher-root)
+
+```
+services:
+  gogopher:
+    volumes:
+      - /home/yourusername/gopher-root:/gopher-root
+
+```
+
+Ensure that the HOST_BIND_ADDRESS and PORT environment variables match those used by the container. 
+
+The gopher protocol's official standard port is 70.
+
+Standard URL. *This assumes the container has mapped the host port 70 to the container port 70.
+
+```
+    ports:  
+      - '70:70'
+```
+
+```
+gopher://localhost
+```
+
+Operators can modify either the host or container ports.
+
+```
+    ports:  
+      - '7070:70'
+```
+
+```
+gopher://localhost:7070
+```
+
+*Note that it was not necessary to change the container port.*
+
+The HOST_BIND_ADDRESS may need to change for your Docker environment. One command gotcha is that it's not listening on 127.0.0.1 in most cases. It's bound to an **internal container IP address**, not a host address (unless you configure the container network settings to do so).
