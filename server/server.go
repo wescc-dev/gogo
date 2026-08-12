@@ -52,6 +52,7 @@ type IServer interface {
 	Stop(ctx context.Context) error
 	ConnectionCount() int
 	UpTime() time.Duration
+	AddMiddleware(middleware Middleware)
 }
 
 func NewServer(
@@ -60,9 +61,7 @@ func NewServer(
 	port string,
 	gopherRoot string,
 	idleTimeout time.Duration,
-	readWriteTimeout time.Duration,
-
-	middleware []Middleware) (IServer, error) {
+	readWriteTimeout time.Duration) (IServer, error) {
 
 	if strings.TrimSpace(hostname) == "" {
 		hostname = "localhost"
@@ -84,7 +83,7 @@ func NewServer(
 		GopherRoot:       gopherRoot,
 		IdleTimeout:      idleTimeout,
 		ReadWriteTimeout: readWriteTimeout,
-		Middlewares:      middleware,
+		Middlewares:      []Middleware{},
 		clientWaitGroup:  sync.WaitGroup{},
 		acceptDone:       make(chan struct{}),
 	}, nil
@@ -94,7 +93,7 @@ func (s *server) Start() error {
 	if err := s.generateGopherMap(); err != nil {
 		log.Println("Error generating gophermap:", err)
 	}
-	ln, err := net.Listen("tcp4", s.BindAddr+":"+s.Port)
+	ln, err := net.Listen("tcp", s.BindAddr+":"+s.Port)
 	if err != nil {
 		return err
 	}
@@ -109,26 +108,9 @@ func (s *server) Start() error {
 	go s.acceptLoop()
 	return nil
 }
-func (s *server) acceptLoop() {
-	defer close(s.acceptDone)
-	for {
-		conn, err := s.listener.Accept()
-		if err != nil {
-			log.Println("Error accepting connection:", err)
-			return
-		}
-		s.clientWaitGroup.Add(1)
-		s.trackConn(conn)
-		go s.handleClientConnection(conn, s.Handler)
-	}
-}
-func (s *server) handleClientConnection(conn net.Conn, handler HandlerFunc) {
-	defer s.clientWaitGroup.Done()
-	defer s.untrackConn(conn)
-	defer conn.Close()
-	if err := s.processRequest(handler, conn, s.GopherRoot); err != nil {
-		log.Println("Error handling connection:", err)
-	}
+
+func (s *server) AddMiddleware(middleware Middleware) {
+	s.Middlewares = append(s.Middlewares, middleware)
 }
 
 func (s *server) Stop(ctx context.Context) error {
@@ -182,6 +164,28 @@ func (s *server) UpTime() time.Duration {
 	defer s.mu.Unlock()
 	t := s.stopTime.Sub(s.startTime)
 	return t
+}
+
+func (s *server) acceptLoop() {
+	defer close(s.acceptDone)
+	for {
+		conn, err := s.listener.Accept()
+		if err != nil {
+			log.Println("Error accepting connection:", err)
+			return
+		}
+		s.clientWaitGroup.Add(1)
+		s.trackConn(conn)
+		go s.handleClientConnection(conn, s.Handler)
+	}
+}
+func (s *server) handleClientConnection(conn net.Conn, handler HandlerFunc) {
+	defer s.clientWaitGroup.Done()
+	defer s.untrackConn(conn)
+	defer conn.Close()
+	if err := s.processRequest(handler, conn, s.GopherRoot); err != nil {
+		log.Println("Error handling connection:", err)
+	}
 }
 
 func (s *server) processRequest(handler HandlerFunc, conn net.Conn, gopherRoot string) error {
