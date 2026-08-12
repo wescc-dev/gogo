@@ -47,7 +47,7 @@ READWRITE_TIMEOUT_SECONDS=30
 
 - **FIREWALL_CONFIG_FILE** is the the file containing the firewall rules, which control what IP addresses are allowed to connect to your GoGopher server. (See below)
 
-- **IDLE_TIMEOUT_SECONDS** is the number of seconds to wait for client request to start. If no request is received before this time, the connection is closed. This prevents malicious users from opening thousands of connections and idling indefinitely and exhausitng your connections.
+- **IDLE_TIMEOUT_SECONDS** is the number of seconds to wait for client request to start. If no request is received before this time, the connection is closed. This prevents malicious users from opening thousands of connections and idling indefinitely and exhausitng your connections. *(Note: This is often called "time to first byte")*
 
 - **READWRITE_TIMEOUT_SECONDS** is the number of seconds to read a request and to write the response (per each direction, not the total time for both read and write). This prevents consuming a connection with a very slow request/repsonse, intentionally or otherwise.
 
@@ -82,6 +82,26 @@ IP Addresses can be individual addresses, a range in CIDR notation, or wildcard 
 
 ## Gophermap Template
 
+Gopher's default behavior for directory selectors is to present a menu of the directory's contents. This includes subdirectories so the the user can navigate the server's document library.
 
+Gophermaps allow operators to customize directory menus. If any directory contains a file named *gophermap*, it is sent instead of the directory's contents.
+
+GoGopher provides a way to generate the top-level gophermap from a template (not subdirectories). If a file named *.gophermap* is found in the GOPHER_ROOT directory, GoGopher will generate a gophermap file if one does not already exist.
+
+At startup, GoGopher generates the gophermap by substituting *tokens* with the values of variables dynamically. The server must be restarted to regenerate the top-level gophermap. *(Dynamic generation, including subdirectory support, is planned.)*
+
+| Token               | Value Source                                                        |
+| ------------------- | ------------------------------------------------------------------- |
+| {{TITLE}}           | TITLE Environment Variable                                          |
+| {{ENTRIES}}         | Selectors for the contents of the directory                         |
+| {{=}}, {{-}}, {{*}} | A decorative line of =, *, or - characters, primarily for dividers. |
+
+# Docker
+
+GoGopher supports running in a Docker container.
+
+```
+docker run
+```
 
 
