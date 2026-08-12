@@ -9,9 +9,11 @@ services:
       - ./gopher-root:/gopher-root
     environment:
       - TITLE="Wes C's Gopher Server"
-      - PORT=70
+      - HOSTNAME=localhost
       - HOST_BIND_IP=0.0.0.0
+      - PORT=70
       - GOPHER_ROOT=/gopher-root
+      - FIREWALL_CONFIG_FILE=firewall-config.json
       - IDLE_TIMEOUT_SECONDS=10
       - READWRITE_TIMEOUT_SECONDS=30
     ports:
