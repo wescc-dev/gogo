@@ -49,7 +49,7 @@ REQUEST_TIMEOUT_SECONDS=30
 
 - **TITLE** is the name of your gopher hole. It is only displayed in the gophermap generated from the .gophermap in the GOPHER_ROOT directory.
 
-- **HOSTNAME** is the host name clients use to connect to your server (e.g. *gopher://<HOSTNAME>.com*). It is used to create the selectors.
+- **HOSTNAME** is the host name clients use to connect to your server (e.g. *gopher://HOSTNAME.com*). It is used to create the selectors.
 
 - **HOST_BIND_IP** is the IP address that the server listens for client requests.
   It may or may not correspond to HOSTNAME. For example, if running in a Docker container, the HOSTNAME may resolve to the host's IP address while GoGopher is listening on a Docker network address. (Inside a container, 0.0.0.0 is the simplest).
@@ -91,7 +91,7 @@ Mode can be set to either
 
 - **whitelist** - only IP address in the "allowedIps" list can connect. Others will be dropped.
 
-- **blacklist** IP addresses in the "blockedIps" list will be dropped. All others can connect.
+- **blacklist** - IP addresses in the "blockedIps" list will be dropped. All others can connect.
 
 IP Addresses can be individual addresses, a range in CIDR notation, or wildcard (*) placeholders.
 

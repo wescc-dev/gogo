@@ -13,7 +13,7 @@ const (
 	AppName   = "Wes C's Go Gopher Server"
 	Version   = "0.0.1"
 	Copyright = "Copyright©️ 2026 Wes C"
-	Link      = "https://wesc.neocities.org/#/gopherhole"
+	Link      = "https://github.com/wescc-dev/gogopher"
 	Footer    = "i                   ------ Go Gopher Server© Wes C. -----\t\terror.host\t1\r\n"
 )
 
