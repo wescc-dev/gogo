@@ -1,7 +1,12 @@
 FROM --platform=$BUILDPLATFORM golang:latest AS build
+
+ARG TARGETOS
+ARG TARGETARCH
+
 WORKDIR /app
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH \
+
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -ldflags="-extldflags=-static" -o gogopher ./src
 
 FROM debian:bookworm-slim
