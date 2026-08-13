@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"gogopher/src/configuration"
+	"gogopher/src/security"
 	"gogopher/src/utility"
 	"io"
 	"io/fs"
@@ -270,7 +271,7 @@ func (s *server) serveSelector(conn net.Conn, rootDir string, selector string, t
 
 	realRoot, _ := filepath.Abs(rootDir)
 	realPath, _ := filepath.Abs(cleanPath)
-	if err := AssertFileSystemAccess(realPath); err != nil {
+	if err := security.AssertFileSystemAccess(realPath); err != nil {
 		if _, err := io.WriteString(conn, "3Not found.\t\terror.host\t1\r\n"); err != nil {
 		}
 		return fmt.Errorf("cannot access file system: %w", err)
