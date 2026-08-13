@@ -142,8 +142,7 @@ services:
       - PORT=70  
       - GOPHER_ROOT=/gopher-root  
       - FIREWALL_CONFIG_FILE=firewall-config.json  
-      - IDLE_TIMEOUT_SECONDS=10  
-      - READWRITE_TIMEOUT_SECONDS=30  
+      - REQUEST_TIMEOUT_SECONDS=30  
     ports:  
       - '70:70'  
 volumes:  
