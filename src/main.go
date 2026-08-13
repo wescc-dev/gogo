@@ -37,8 +37,7 @@ func printConfiguration() {
 	log.Println("Port:", cfg.Port)
 	log.Println("Gopher root:", cfg.GopherRoot)
 	log.Println("Firewall config:", cfg.FireWallConfigFile)
-	log.Println("Idle timeout:", cfg.IdleTimeout)
-	log.Println("Read/write timeout:", cfg.ReadWriteTimeout)
+	log.Println("Request timeout (sec.):", cfg.RequestTimeoutDuration)
 	log.Println("----------------------------------")
 
 }
@@ -46,8 +45,7 @@ func printConfiguration() {
 func startServer() server.IServer {
 	log.Println("Starting server...")
 	var svr, err = server.NewServer(cfg.HostName, cfg.BindAddress, cfg.Port, cfg.GopherRoot,
-		cfg.IdleTimeout,
-		cfg.ReadWriteTimeout)
+		cfg.RequestTimeoutDuration)
 	if svr != nil {
 		middleware.AddFirewallMiddleware(svr)
 	}

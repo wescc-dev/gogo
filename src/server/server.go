@@ -24,20 +24,21 @@ type HandlerFunc func(conn net.Conn, rootDir string, selector string, timeout ti
 
 type Middleware func(HandlerFunc) HandlerFunc
 
+const GophermapTemplateName = ".gophermap"
+
 var cfg = configuration.GetConfiguration()
 
 // server is a simple gopher server
 type server struct {
-	Hostname         string
-	BindAddr         string
-	Port             string
-	Handler          HandlerFunc
-	Middlewares      []Middleware
-	ReadWriteTimeout time.Duration
-	IdleTimeout      time.Duration
-	GopherRoot       string
-	startTime        time.Time
-	stopTime         time.Time
+	Hostname               string
+	BindAddr               string
+	Port                   string
+	Handler                HandlerFunc
+	Middlewares            []Middleware
+	RequestTimeoutDuration time.Duration
+	GopherRoot             string
+	startTime              time.Time
+	stopTime               time.Time
 
 	mu              sync.Mutex
 	listener        net.Listener
@@ -62,8 +63,7 @@ func NewServer(
 	bindAddr string,
 	port string,
 	gopherRoot string,
-	idleTimeout time.Duration,
-	readWriteTimeout time.Duration) (IServer, error) {
+	requestTimeoutDuration time.Duration) (IServer, error) {
 
 	if strings.TrimSpace(hostname) == "" {
 		hostname = "localhost"
@@ -79,31 +79,27 @@ func NewServer(
 	}
 
 	return &server{
-		Hostname:         hostname,
-		BindAddr:         bindAddr,
-		Port:             port,
-		GopherRoot:       gopherRoot,
-		IdleTimeout:      idleTimeout,
-		ReadWriteTimeout: readWriteTimeout,
-		Middlewares:      []Middleware{},
-		clientWaitGroup:  sync.WaitGroup{},
-		acceptDone:       make(chan struct{}),
-		stopRequested:    false,
+		Hostname:               hostname,
+		BindAddr:               bindAddr,
+		Port:                   port,
+		GopherRoot:             gopherRoot,
+		RequestTimeoutDuration: requestTimeoutDuration,
+		Middlewares:            []Middleware{},
+		clientWaitGroup:        sync.WaitGroup{},
+		acceptDone:             make(chan struct{}),
+		stopRequested:          false,
 	}, nil
 }
 
 func (s *server) Start() error {
-	if err := s.generateGopherMap(); err != nil {
-		log.Println("Error generating gophermap:", err)
-	}
 	ln, err := net.Listen("tcp", s.BindAddr+":"+s.Port)
 	if err != nil {
 		return err
 	}
-	log.Println("gopher: listening on ", s.BindAddr+":"+s.Port)
+	log.Println("GoGopher: listening on ", s.BindAddr+":"+s.Port)
 
-	s.Handler = s.useMiddleware(serveSelector)
 	s.mu.Lock()
+	s.Handler = s.useMiddleware(s.serveSelector)
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})
 	s.startTime = time.Now()
@@ -196,34 +192,40 @@ func (s *server) acceptLoop() {
 func (s *server) handleClientConnection(conn net.Conn, handler HandlerFunc) {
 	defer s.clientWaitGroup.Done()
 	defer s.untrackConn(conn)
-	defer conn.Close()
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+			log.Println("Error closing connection:", err)
+		}
+	}(conn)
 	if err := s.processRequest(handler, conn, s.GopherRoot); err != nil {
-		log.Println("Error handling connection:", err)
+		log.Println("Error handling request:", err)
 	}
+	log.Println("Request processed:", conn.RemoteAddr())
 }
 
 func (s *server) processRequest(handler HandlerFunc, conn net.Conn, gopherRoot string) error {
-	if s.ReadWriteTimeout > 0 {
-		_ = conn.SetReadDeadline(time.Now().Add(s.ReadWriteTimeout))
+	if s.RequestTimeoutDuration > 0 {
+		_ = conn.SetReadDeadline(time.Now().Add(s.RequestTimeoutDuration))
 	}
 
 	ctx := context.Background()
-	if s.IdleTimeout > 0 {
+	if s.RequestTimeoutDuration > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, s.IdleTimeout)
+		ctx, cancel = context.WithTimeout(ctx, s.RequestTimeoutDuration)
 		defer cancel()
 		// Apply the timeout to the connection
-		_ = conn.SetReadDeadline(time.Now().Add(s.IdleTimeout))
+		_ = conn.SetReadDeadline(time.Now().Add(s.RequestTimeoutDuration))
 	}
 	reader := bufio.NewReader(conn)
 	req, err := reader.ReadString('\n')
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot read request: %w", err)
 	}
 
 	var selector = strings.TrimSpace(req)
 	log.Println("Selector:", selector)
-	return handler(conn, gopherRoot, selector, s.ReadWriteTimeout)
+	return handler(conn, gopherRoot, selector, s.RequestTimeoutDuration)
 }
 
 func (s *server) trackConn(c net.Conn) {
@@ -250,20 +252,196 @@ func (s *server) useMiddleware(h HandlerFunc) HandlerFunc {
 	return h
 }
 
-func (s *server) generateGopherMap() error {
-	srcPath := filepath.Join(s.GopherRoot, ".gophermap")
-	outPath := filepath.Join(s.GopherRoot, "gophermap")
-	if info, err := os.Stat(s.GopherRoot); !(err == nil && info.IsDir()) {
-		err := os.MkdirAll(s.GopherRoot, os.ModePerm)
-		if err == nil {
-			log.Println("GopherRoot", s.GopherRoot, "does not exist and was created")
+func (s *server) serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.Duration) error {
+	// Empty selector → serve root directory
+	if selector == "" {
+		log.Println("Serving Selector:", s.GopherRoot)
+
+		if err := s.serveDirectory(conn, rootDir, selector, timeOut); err != nil {
+			return fmt.Errorf("cannot serve root directory: %w", err)
+		}
+		return nil
+	} else {
+		log.Println("Serving Selector:", selector)
+
+	}
+	clean := filepath.Clean("/" + selector) // force selector to be relative
+	cleanPath := filepath.Join(rootDir, clean)
+
+	realRoot, _ := filepath.Abs(rootDir)
+	realPath, _ := filepath.Abs(cleanPath)
+
+	if !strings.HasPrefix(realPath, realRoot) {
+		if _, err := io.WriteString(conn, "3Access denied.\r\n"); err != nil {
+			return fmt.Errorf("cannot write error message: %w", err)
+		}
+		return nil
+	}
+
+	// If it's a directory
+	if utility.IsDirectory(cleanPath) {
+		err := s.serveDirectory(conn, cleanPath, selector, timeOut)
+		if err != nil {
+			return fmt.Errorf("cannot serve directory: %w", err)
+		}
+		return nil
+	}
+
+	// If it's a file
+	if utility.FileExists(cleanPath) {
+		if err := s.serveFile(conn, cleanPath, timeOut); err != nil {
+			return fmt.Errorf("cannot serve file: %w", err)
+		}
+		return nil
+	}
+
+	// Not found
+	if _, err := fmt.Fprintf(conn, "3Not found.\r\n.\r\n"); err != nil {
+		return fmt.Errorf("cannot write error message: %w", err)
+	}
+	return fmt.Errorf("file not found: %s", cleanPath)
+}
+
+func (s *server) serveDirectory(conn net.Conn, dir string, selector string, timeOut time.Duration) error {
+	defer func(conn net.Conn, t time.Time) {
+		_ = conn.SetReadDeadline(t)
+	}(conn, time.Time{})
+
+	// Regenerate the gophermap if it's outdated
+	gophermapPath := filepath.Join(dir, "gophermap")
+	gophermapTemplatePath := filepath.Join(dir, GophermapTemplateName)
+	gopherMapExists := utility.FileExists(gophermapPath)
+	gopherMapTemplateExists := utility.FileExists(gophermapTemplatePath)
+
+	// Gophermap exists, but template doesn't': serve it
+	if gopherMapExists && !gopherMapTemplateExists {
+		err := s.serveFile(conn, gophermapPath, timeOut)
+		if err != nil {
+			return fmt.Errorf("cannot serve gophermap: %w", err)
+		}
+		return nil
+	}
+
+	// Template exists, but gophermao doesn't: generate it and serve it
+	if gopherMapTemplateExists && !gopherMapExists {
+		err := s.generateGopherMap(conn, dir)
+		if err != nil {
+			return fmt.Errorf("cannot generate gophermap: %w", err)
+		}
+		log.Println("Generated gophermap for:", dir)
+		return nil
+	}
+
+	// Gophermap exists and newer template exists: generate it and serve it
+	if gopherMapExists {
+		var gopherMapInfo, _ = os.Stat(gophermapPath)
+		var gopherMapTemplateInfo, _ = os.Stat(gophermapTemplatePath)
+		if gopherMapInfo.ModTime().Before(gopherMapTemplateInfo.ModTime()) {
+			err := s.generateGopherMap(conn, gophermapTemplatePath)
+			if err != nil {
+				return err
+			}
+			log.Println("Generated gophermap for:", dir)
+			return nil
 		} else {
+			s.serveFile(conn, gophermapPath, timeOut)
+			return nil
+		}
+	}
+
+	// Otherwise list directory
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if _, eerr := fmt.Fprintf(conn,
+			"3Error reading directory\t%s/\t%s\t%s\r\n",
+			dir, cfg.HostName, cfg.Port); eerr != nil {
+			return fmt.Errorf("cannot write error message: %w", err)
+		}
+		return fmt.Errorf("cannot read directory: %w", err)
+	}
+	if len(entries) == 0 {
+		if _, err := conn.Write([]byte("3Directory is empty\t\terror.host\t70.\r\n")); err != nil {
+			return fmt.Errorf("cannot write error message: %w", err)
+		}
+	} else {
+		sortDirectoryEntries(entries)
+		for _, e := range entries {
+			if gopherEntry, err := buildGopherEntry(e, selector, cfg.HostName, cfg.Port); err != nil {
+				log.Println(err)
+				continue
+			} else {
+				if err = conn.SetWriteDeadline(time.Now().Add(timeOut)); err != nil {
+					return err
+				}
+				if _, err := conn.Write([]byte(gopherEntry)); err != nil {
+					log.Println(err)
+					return err
+				}
+			}
+		}
+	}
+	writeBanner(conn, timeOut)
+	writeFooter(conn, timeOut)
+	return nil
+}
+
+func (s *server) serveFile(conn net.Conn, path string, timeout time.Duration) error {
+	//TODO: filter files
+	// Check for . prefix
+
+	f, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("cannot open file: %w", err)
+	}
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(f)
+
+	buf := make([]byte, 4*1024) // 4 KB chunks
+
+	for {
+		// Read next chunk
+		n, err := f.Read(buf)
+		if n > 0 {
+			// Apply timeout for each write operation
+			err := conn.SetWriteDeadline(time.Now().Add(timeout))
+			if err != nil {
+				return fmt.Errorf("cannot set write deadline: %w", err)
+			}
+
+			if _, err := conn.Write(buf[:n]); err != nil {
+				return fmt.Errorf("cannot write file: %w", err)
+			}
+
+			// Clear deadline after successful write operation
+			if err := conn.SetWriteDeadline(time.Time{}); err != nil {
+				// safe to ignore
+			}
+		}
+
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("cannot read file: %w", err)
+		}
+	}
+	log.Println("File read:", path)
+	writeFooter(conn, timeout)
+	return nil
+}
+
+func (s *server) generateGopherMap(conn net.Conn, dirPath string) error {
+	if info, err := os.Stat(s.GopherRoot); !(err == nil && info.IsDir()) {
+		if err := os.MkdirAll(s.GopherRoot, os.ModePerm); err != nil {
 			return fmt.Errorf("GopherRoot %s does not exist and could not be created. No files will be served", s.GopherRoot)
 		}
 	}
-	data, err := os.ReadFile(srcPath)
+	gophermapPath := filepath.Join(dirPath, "gophermap")
+	gophermapTemplatePath := filepath.Join(dirPath, GophermapTemplateName)
+	data, err := os.ReadFile(gophermapTemplatePath)
 	if err != nil {
-		return fmt.Errorf("cannot open gophermap: %w", err)
+		return fmt.Errorf("cannot open .gophermap: %w", err)
 	}
 
 	content := string(data)
@@ -284,32 +462,36 @@ func (s *server) generateGopherMap() error {
 	}
 
 	// Now handle {{ENTRIES}}
-	entries, err := s.generateEntries()
+	entries, err := s.generateEntries(dirPath)
 	if err != nil {
 		return err
 	}
-
+	// Replace tokens
 	content = strings.ReplaceAll(content, "{{ENTRIES}}", entries)
 	content += configuration.Footer
-	// Write output
-	if err := os.WriteFile(outPath, []byte(content), 0644); err != nil {
-		return fmt.Errorf("cannot write generated gophermap: %w", err)
+	if _, err := conn.Write([]byte(content)); err != nil {
+		return fmt.Errorf("cannot write gophermap: %w", err)
 	}
 
+	// Write output
+	if err := os.WriteFile(gophermapPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("cannot write generated gophermap: %w", err)
+	}
 	return nil
 }
 
-func (s *server) generateEntries() (string, error) {
-	dir, err := os.ReadDir(s.GopherRoot)
+func (s *server) generateEntries(dirPath string) (string, error) {
+	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return "", fmt.Errorf("cannot read gopher root: %w", err)
 	}
-	sortDirectoryEntries(dir)
+
+	sortDirectoryEntries(entries)
 
 	var entriesBuf bytes.Buffer
 	w := bufio.NewWriter(&entriesBuf)
-	for _, e := range dir {
-		if s, err := buildGopherEntry(e, "", s.Hostname, s.Port); err != nil {
+	for _, e := range entries {
+		if s, err := buildGopherEntry(e, strings.TrimPrefix(dirPath, s.GopherRoot), s.Hostname, s.Port); err != nil {
 			log.Println(err)
 			continue
 		} else {
@@ -318,85 +500,6 @@ func (s *server) generateEntries() (string, error) {
 	}
 	_ = w.Flush()
 	return entriesBuf.String(), nil
-}
-
-func serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.Duration) error {
-	log.Println("Serving selector:", selector)
-	// Empty selector → serve root directory
-	if selector == "" {
-		serveDirectory(conn, rootDir, selector, timeOut)
-		return nil
-	}
-	clean := filepath.Clean("/" + selector) // force selector to be relative
-	cleanPath := filepath.Join(rootDir, clean)
-
-	realRoot, _ := filepath.Abs(rootDir)
-	realPath, _ := filepath.Abs(cleanPath)
-
-	if !strings.HasPrefix(realPath, realRoot) {
-		_, err := io.WriteString(conn, "3Access denied.\r\n")
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	// If it's a directory
-	if utility.IsDirectory(cleanPath) {
-		serveDirectory(conn, cleanPath, selector, timeOut)
-		return nil
-	}
-
-	// If it's a file
-	if utility.FileExists(cleanPath) {
-		serveFile(conn, cleanPath, timeOut)
-		return nil
-	}
-
-	// Not found
-	fmt.Fprintf(conn, "3Not found.\r\n.\r\n")
-	return nil
-}
-
-func serveDirectory(conn net.Conn, dir string, selector string, timeOut time.Duration) {
-	defer conn.SetReadDeadline(time.Time{})
-	// If gophermap exists, serve it
-	mapPath := filepath.Join(dir, "gophermap")
-	if utility.FileExists(mapPath) {
-		serveFile(conn, mapPath, timeOut)
-		return
-	}
-
-	// Otherwise list directory
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		log.Println(err)
-		_, err := fmt.Fprintf(conn,
-			"3Error reading directory\t%s/\t%s\t%s\r\n",
-			dir, cfg.HostName, cfg.Port)
-		if err != nil {
-			log.Println(err)
-		}
-
-		return
-	}
-	sortDirectoryEntries(entries)
-	for _, e := range entries {
-		if gopherEntry, err := buildGopherEntry(e, selector, cfg.HostName, cfg.Port); err != nil {
-			log.Println(err)
-			continue
-		} else {
-			if err = conn.SetWriteDeadline(time.Now().Add(timeOut)); err != nil {
-				return
-			}
-			if _, err := conn.Write([]byte(gopherEntry)); err != nil {
-				log.Println(err)
-				return
-			}
-		}
-	}
-	writeBanner(conn, timeOut)
-	writeFooter(conn, timeOut)
 }
 
 func sortDirectoryEntries(entries []os.DirEntry) {
@@ -425,7 +528,9 @@ func writeBanner(conn net.Conn, timeOut time.Duration) {
 }
 
 func writeFooter(conn net.Conn, timeOut time.Duration) {
-	defer conn.SetReadDeadline(time.Time{})
+	defer func(conn net.Conn, t time.Time) {
+		_ = conn.SetReadDeadline(t)
+	}(conn, time.Time{})
 	_ = conn.SetWriteDeadline(time.Now().Add(timeOut))
 	if _, err := conn.Write([]byte(".\r\n")); err != nil {
 		log.Println(err)
@@ -471,62 +576,4 @@ func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) 
 	}
 
 	return itemType + pictogram + name + "\t" + fullSelector + "\t" + host + "\t" + port + "\r\n", nil
-}
-
-func serveFile(conn net.Conn, path string, timeout time.Duration) {
-	if strings.HasSuffix(path, ".gophermap") ||
-		strings.HasSuffix(path, ".gophermap") {
-		_, err := io.WriteString(conn, "3Access denied.\r\n")
-		if err != nil {
-			return
-		}
-		return
-	}
-	f, err := os.Open(path)
-	if err != nil {
-		_, err := io.WriteString(conn, "3Error reading file.\r\n")
-		if err != nil {
-			return
-		}
-		return
-	}
-	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-		}
-	}(f)
-
-	buf := make([]byte, 4*1024) // 4 KB chunks
-
-	for {
-		// Read next chunk
-		n, err := f.Read(buf)
-		if n > 0 {
-			// Apply timeout for each write operation
-			err := conn.SetWriteDeadline(time.Now().Add(timeout))
-			if err != nil {
-				return
-			}
-
-			if _, err := conn.Write(buf[:n]); err != nil {
-				log.Println("Write aborted:", err)
-				return
-			}
-
-			// Clear deadline after successful write operation
-			if err := conn.SetWriteDeadline(time.Time{}); err != nil {
-				// safe to ignore
-			}
-		}
-
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Println("File read error:", err)
-			return
-		}
-	}
-	log.Println("File read:", path)
-	writeFooter(conn, timeout)
 }

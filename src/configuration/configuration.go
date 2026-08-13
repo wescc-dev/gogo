@@ -17,14 +17,13 @@ const (
 )
 
 type Configuration struct {
-	Title              string
-	HostName           string
-	BindAddress        string // In a Docker container, the ip will be different from the host ip
-	Port               string
-	GopherRoot         string
-	FireWallConfigFile string
-	IdleTimeout        time.Duration
-	ReadWriteTimeout   time.Duration
+	Title                  string
+	HostName               string
+	BindAddress            string // In a Docker container, the ip will be different from the host ip
+	Port                   string
+	GopherRoot             string
+	FireWallConfigFile     string
+	RequestTimeoutDuration time.Duration
 }
 
 var _configuration *Configuration = nil
@@ -32,29 +31,21 @@ var _configuration *Configuration = nil
 func GetConfiguration() Configuration {
 	var _ = godotenv.Load(".env")
 	if _configuration == nil {
-		var envIdleTimeout = getEnv("IDLE_TIMEOUT_SECONDS", "10")
-		var envReadWriteTimeout = getEnv("READWRITE_TIMEOUT_SECONDS", "30")
-		var idle int
-		var readWriteTimeout int
-		if val, err := strconv.Atoi(envIdleTimeout); err != nil {
-			idle = 10
+		var envRequestTimeoutSeconds = getEnv("READWRITE_TIMEOUT_SECONDS", "30")
+		var requestTimeoutSeconds int
+		if val, err := strconv.Atoi(envRequestTimeoutSeconds); err != nil {
+			requestTimeoutSeconds = 30
 		} else {
-			idle = val
-		}
-		if val, err := strconv.Atoi(envReadWriteTimeout); err != nil {
-			readWriteTimeout = 30
-		} else {
-			readWriteTimeout = val
+			requestTimeoutSeconds = val
 		}
 		_configuration = &Configuration{
-			Title:              getEnv("TITLE", "Wes C's Gopher Hole"),
-			HostName:           getEnv("HOSTNAME", "localhost"),
-			BindAddress:        getEnv("HOST_BIND_IP", "0.0.0.0"),
-			Port:               getEnv("PORT", "70"),
-			GopherRoot:         getEnv("GOPHER_ROOT", "gopher-root"),
-			FireWallConfigFile: getEnv("FIREWALL_CONFIG_FILE", "firewall-config.json"),
-			IdleTimeout:        time.Duration(idle) * time.Second,
-			ReadWriteTimeout:   time.Duration(readWriteTimeout) * time.Second,
+			Title:                  getEnv("TITLE", "Wes C's Gopher Hole"),
+			HostName:               getEnv("HOSTNAME", "localhost"),
+			BindAddress:            getEnv("HOST_BIND_IP", "0.0.0.0"),
+			Port:                   getEnv("PORT", "70"),
+			GopherRoot:             getEnv("GOPHER_ROOT", "gopher-root"),
+			FireWallConfigFile:     getEnv("FIREWALL_CONFIG_FILE", "firewall-config.json"),
+			RequestTimeoutDuration: time.Duration(requestTimeoutSeconds) * time.Second,
 		}
 	}
 	return *_configuration

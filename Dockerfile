@@ -6,6 +6,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH \
 
 FROM debian:bookworm-slim
 COPY --from=build /app/gogopher gogopher
+COPY .env .env
 COPY firewall-config.json firewall-config.json
 COPY gopher-root /gopher-root
 ENV TITLE="Wes C's Gopher Server" \
