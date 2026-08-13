@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -24,6 +25,9 @@ type Configuration struct {
 	GopherRoot             string
 	FireWallConfigFile     string
 	RequestTimeoutDuration time.Duration
+	OS                     string
+	Architecture           string
+	NumCpus                int
 }
 
 var _configuration *Configuration = nil
@@ -46,6 +50,9 @@ func GetConfiguration() Configuration {
 			GopherRoot:             getEnv("GOPHER_ROOT", "gopher-root"),
 			FireWallConfigFile:     getEnv("FIREWALL_CONFIG_FILE", "firewall-config.json"),
 			RequestTimeoutDuration: time.Duration(requestTimeoutSeconds) * time.Second,
+			OS:                     runtime.GOOS,
+			Architecture:           runtime.GOARCH,
+			NumCpus:                runtime.NumCPU(),
 		}
 	}
 	return *_configuration

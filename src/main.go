@@ -38,6 +38,9 @@ func printConfiguration() {
 	log.Println("Gopher root:", cfg.GopherRoot)
 	log.Println("Firewall config:", cfg.FireWallConfigFile)
 	log.Println("Request timeout (sec.):", cfg.RequestTimeoutDuration)
+	log.Println("OS:", cfg.OS)
+	log.Println("Architecture:", cfg.Architecture)
+	log.Println("Number of CPUs:", cfg.NumCpus)
 	log.Println("----------------------------------")
 
 }
