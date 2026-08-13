@@ -6,7 +6,15 @@ An effective Gopher server written in Go by Wes C.
 
 GoGopher is provided under the MIT License. See the [LICENSE](LICENSE) file including in this repository. 
 
-## Build and Run
+## Build and Run from Source
+
+***You can skip to the Docker section below if you don't want to build from source.***
+
+The source code for GoGOpher is available at:
+
+```
+https://github.com/wescc-dev/gogopher
+```
 
 1. Install the latest Go SDK from https://golang.com
 2. Build
@@ -160,7 +168,6 @@ services:
   gogopher:
     volumes:
       - /home/yourusername/gopher-root:/gopher-root
-
 ```
 
 Ensure that the HOST_BIND_ADDRESS and PORT environment variables match those used by the container. 
