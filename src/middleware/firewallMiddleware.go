@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"gogopher/src/configuration"
+	"gogopher/src/core"
 	"gogopher/src/security"
-	"gogopher/src/server"
 	"log"
 	"net"
 	"time"
@@ -12,14 +12,14 @@ import (
 var cfg = configuration.GetConfiguration()
 var fw, firewallError = security.NewFireWall(cfg.FireWallConfigFile)
 
-func AddFirewallMiddleware(svr server.IServer) {
+func AddFirewallMiddleware(svr core.IServer) {
 	if firewallError != nil {
 		log.Fatal("Error loading firewall configuration: ", firewallError)
 	}
 	svr.AddMiddleware(firewallMiddleware)
 }
 
-var firewallMiddleware server.Middleware = func(next server.HandlerFunc) server.HandlerFunc {
+var firewallMiddleware core.Middleware = func(next core.HandlerFunc) core.HandlerFunc {
 	return func(
 		conn net.Conn,
 		rootDir string,

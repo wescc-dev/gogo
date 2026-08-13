@@ -6,7 +6,9 @@ import (
 	"context"
 	"fmt"
 	"gogopher/src/configuration"
+	"gogopher/src/core"
 	"gogopher/src/security"
+	"gogopher/src/selectorHandler"
 	"gogopher/src/utility"
 	"io"
 	"io/fs"
@@ -21,10 +23,6 @@ import (
 	"time"
 )
 
-type HandlerFunc func(conn net.Conn, rootDir string, selector string, timeout time.Duration) error
-
-type Middleware func(HandlerFunc) HandlerFunc
-
 const GophermapTemplateName = ".gophermap"
 
 var cfg = configuration.GetConfiguration()
@@ -34,8 +32,8 @@ type server struct {
 	Hostname               string
 	BindAddr               string
 	Port                   string
-	Handler                HandlerFunc
-	Middlewares            []Middleware
+	Handler                core.HandlerFunc
+	Middlewares            []core.Middleware
 	RequestTimeoutDuration time.Duration
 	GopherRoot             string
 	startTime              time.Time
@@ -50,21 +48,12 @@ type server struct {
 	stopRequested   bool
 }
 
-type IServer interface {
-	Start() error
-	Stop(ctx context.Context) error
-	ConnectionCount() int
-	UpTime() time.Duration
-	AddMiddleware(middleware Middleware)
-	IsStarted() bool
-}
-
 func NewServer(
 	hostname string,
 	bindAddr string,
 	port string,
 	gopherRoot string,
-	requestTimeoutDuration time.Duration) (IServer, error) {
+	requestTimeoutDuration time.Duration) (core.IServer, error) {
 
 	if strings.TrimSpace(hostname) == "" {
 		hostname = "localhost"
@@ -85,7 +74,7 @@ func NewServer(
 		Port:                   port,
 		GopherRoot:             gopherRoot,
 		RequestTimeoutDuration: requestTimeoutDuration,
-		Middlewares:            []Middleware{},
+		Middlewares:            []core.Middleware{},
 		clientWaitGroup:        sync.WaitGroup{},
 		acceptDone:             make(chan struct{}),
 		stopRequested:          false,
@@ -110,7 +99,7 @@ func (s *server) Start() error {
 	return nil
 }
 
-func (s *server) AddMiddleware(middleware Middleware) {
+func (s *server) AddMiddleware(middleware core.Middleware) {
 	s.Middlewares = append(s.Middlewares, middleware)
 }
 func (s *server) IsStarted() bool {
@@ -190,7 +179,7 @@ func (s *server) acceptLoop() {
 		go s.handleClientConnection(conn, s.Handler)
 	}
 }
-func (s *server) handleClientConnection(conn net.Conn, handler HandlerFunc) {
+func (s *server) handleClientConnection(conn net.Conn, handler core.HandlerFunc) {
 	defer s.clientWaitGroup.Done()
 	defer s.untrackConn(conn)
 	defer func(conn net.Conn) {
@@ -205,7 +194,7 @@ func (s *server) handleClientConnection(conn net.Conn, handler HandlerFunc) {
 	log.Println("Request processed:", conn.RemoteAddr())
 }
 
-func (s *server) processRequest(handler HandlerFunc, conn net.Conn, gopherRoot string) error {
+func (s *server) processRequest(handler core.HandlerFunc, conn net.Conn, gopherRoot string) error {
 	if s.RequestTimeoutDuration > 0 {
 		_ = conn.SetReadDeadline(time.Now().Add(s.RequestTimeoutDuration))
 	}
@@ -246,7 +235,7 @@ func (s *server) untrackConn(c net.Conn) {
 	log.Println("Connection closed:", c.RemoteAddr(), "remaining:", cons)
 }
 
-func (s *server) useMiddleware(h HandlerFunc) HandlerFunc {
+func (s *server) useMiddleware(h core.HandlerFunc) core.HandlerFunc {
 	for i := len(s.Middlewares) - 1; i >= 0; i-- {
 		h = s.Middlewares[i](h)
 	}
@@ -264,11 +253,14 @@ func (s *server) serveSelector(conn net.Conn, rootDir string, selector string, t
 		return nil
 	} else {
 		log.Println("Serving Selector:", selector)
-
 	}
+
 	clean := filepath.Clean("/" + selector) // force selector to be relative
 	cleanPath := filepath.Join(rootDir, clean)
-
+	if clean == "/pggp-key" {
+		s := selectorHandler.NewSelector()
+		s.Select(conn, "", selector, timeOut)
+	}
 	realRoot, _ := filepath.Abs(rootDir)
 	realPath, _ := filepath.Abs(cleanPath)
 	if err := security.AssertFileSystemAccess(realPath); err != nil {
@@ -348,10 +340,12 @@ func (s *server) serveDirectory(conn net.Conn, dir string, selector string, time
 			}
 			log.Println("Generated gophermap for:", dir)
 			return nil
-		} else {
-			s.serveFile(conn, gophermapPath, timeOut)
-			return nil
 		}
+
+		if err := s.serveFile(conn, gophermapPath, timeOut); err != nil {
+			return fmt.Errorf("cannot serve gophermap: %w", err)
+		}
+		return nil
 	}
 
 	// Otherwise list directory
