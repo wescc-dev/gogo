@@ -198,4 +198,4 @@ gopher://localhost:7070
 
 *Note that it was not necessary to change the container port.*
 
-The HOST_BIND_ADDRESS may need to change for your Docker environment. One command gotcha is that it's not listening on 127.0.0.1 in most cases. It's bound to an **internal container IP address**, not a host address (unless you configure the container network settings to do so).
+The HOST_BIND_ADDRESS may need to change for your Docker environment. One common gotcha is that it's not listening on 127.0.0.1 in most cases. It's bound to an **internal container IP address**, not a host address (unless you configure the container network settings to do so).
