@@ -3,3 +3,4 @@ gogopher
 .run/
 docker-build.sh
 gophermap
+docker-build-push.sh
