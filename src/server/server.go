@@ -270,7 +270,11 @@ func (s *server) serveSelector(conn net.Conn, rootDir string, selector string, t
 
 	realRoot, _ := filepath.Abs(rootDir)
 	realPath, _ := filepath.Abs(cleanPath)
-
+	if err := AssertFileSystemAccess(realPath); err != nil {
+		if _, err := io.WriteString(conn, "3Not found.\t\terror.host\t1\r\n"); err != nil {
+		}
+		return fmt.Errorf("cannot access file system: %w", err)
+	}
 	if !strings.HasPrefix(realPath, realRoot) {
 		if _, err := io.WriteString(conn, "3Access denied.\r\n"); err != nil {
 			return fmt.Errorf("cannot write error message: %w", err)
@@ -360,7 +364,7 @@ func (s *server) serveDirectory(conn net.Conn, dir string, selector string, time
 		return fmt.Errorf("cannot read directory: %w", err)
 	}
 	if len(entries) == 0 {
-		if _, err := conn.Write([]byte("3Directory is empty\t\terror.host\t70.\r\n")); err != nil {
+		if _, err := conn.Write([]byte("3Directory is empty\t\t.\r\n")); err != nil {
 			return fmt.Errorf("cannot write error message: %w", err)
 		}
 	} else {
@@ -386,9 +390,6 @@ func (s *server) serveDirectory(conn net.Conn, dir string, selector string, time
 }
 
 func (s *server) serveFile(conn net.Conn, path string, timeout time.Duration) error {
-	//TODO: filter files
-	// Check for . prefix
-
 	f, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("cannot open file: %w", err)
