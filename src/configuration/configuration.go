@@ -38,9 +38,9 @@ type Configuration struct {
 
 var _configuration *Configuration = nil
 
-func GetConfiguration() Configuration {
-	var _ = godotenv.Load(".env")
+func GetConfiguration() *Configuration {
 	if _configuration == nil {
+		var _ = godotenv.Load(".env")
 		var envRequestTimeoutSeconds = getEnv("READWRITE_TIMEOUT_SECONDS", "30")
 		var requestTimeoutSeconds int
 		if val, err := strconv.Atoi(envRequestTimeoutSeconds); err != nil {
@@ -66,7 +66,7 @@ func GetConfiguration() Configuration {
 			NumCpus:                runtime.NumCPU(),
 		}
 	}
-	return *_configuration
+	return _configuration
 }
 
 func getEnv(key, fallback string) string {

@@ -64,7 +64,8 @@ func (d *DirectorySelectorHandler) serveDirectory(conn net.Conn, selectorPath st
 		return fmt.Errorf("cannot read directory: %w", err)
 	}
 	if len(entries) == 0 {
-		if _, err := conn.Write([]byte("3Directory is empty\t\t.\r\n")); err != nil {
+		emptymsg := buildSelectorWithPictogram("3", "", "Directory is empty", "", d.cfg.HostName, d.cfg.Port)
+		if _, err := conn.Write([]byte(emptymsg)); err != nil {
 			return fmt.Errorf("cannot write error message: %w", err)
 		}
 	} else {
@@ -136,10 +137,9 @@ func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, dirPath stri
 		"OS":     d.cfg.OS,
 		"ARCH":   d.cfg.Architecture,
 		"CPUS":   fmt.Sprintf("%d", d.cfg.NumCpus),
-
-		"=": "======================================================================",
-		"*": "**********************************************************************",
-		"-": "----------------------------------------------------------------------",
+		"=":      "======================================================================",
+		"*":      "**********************************************************************",
+		"-":      "----------------------------------------------------------------------",
 	}
 
 	for key, val := range tokens {
@@ -184,7 +184,6 @@ func (d *DirectorySelectorHandler) generateEntries(dirPath string) (string, erro
 
 func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) (string, error) {
 	name := e.Name()
-
 	// Skip hidden files
 	if strings.HasPrefix(name, ".") {
 		return "", nil
@@ -193,18 +192,18 @@ func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) 
 	if name == "gophermap" {
 		return "", nil
 	}
-
 	// Always use path.Join for gopher selectors
 	fullSelector := path.Join("/"+selector, name)
-
 	// Directories
 	if e.IsDir() {
-		return "1" + "📁 " + name + "\t" + fullSelector + "\t" + host + "\t" + port + "\r\n", nil
+		return buildSelectorWithPictogram("1", "📁 ", name, fullSelector, host, port), nil
 	}
 
-	// Files
-	ext := strings.ToLower(filepath.Ext(name))
+	return buildSelector(name, fullSelector, host, port), nil
+}
 
+func buildSelector(name string, fullSelector string, host string, port string) string {
+	ext := strings.ToLower(filepath.Ext(name))
 	var itemType string
 	var pictogram string
 	switch ext {
@@ -218,8 +217,11 @@ func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) 
 		itemType = "9"
 		pictogram = "⚙︎ "
 	}
+	return buildSelectorWithPictogram(itemType, pictogram, name, fullSelector, host, port)
+}
 
-	return itemType + pictogram + name + "\t" + fullSelector + "\t" + host + "\t" + port + "\r\n", nil
+func buildSelectorWithPictogram(itemType string, pictogram string, name string, fullSelector string, host string, port string) string {
+	return itemType + pictogram + name + "\t" + fullSelector + "\t" + host + "\t" + port + "\r\n"
 }
 
 func sortDirectoryEntries(entries []os.DirEntry) {

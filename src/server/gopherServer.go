@@ -87,8 +87,8 @@ func (s *gopherServer) Start() error {
 	s.mu.Lock()
 	s.Handler = s.useMiddleware(s.serveSelector)
 	s.selectors = []selectorHandler.ISelectorHandler{
-		selectorHandler.NewDirectorySelectorHandler(&cfg),
-		selectorHandler.NewFileSelectorHandler(&cfg)}
+		selectorHandler.NewDirectorySelectorHandler(cfg),
+		selectorHandler.NewFileSelectorHandler(cfg)}
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})
 	s.startTime = time.Now()
