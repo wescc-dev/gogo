@@ -117,11 +117,23 @@ serve a dynamically generated gophermap if there isn't a file named *gophermap* 
 
 GoGopher generates the gophermap dynamically by substituting *tokens* with the values of variables dynamically.
 
-| Token               | Value Source                                                        |
-| ------------------- | ------------------------------------------------------------------- |
-| {{TITLE}}           | TITLE Environment Variable                                          |
-| {{ENTRIES}}         | Selectors for the contents of the directory                         |
-| {{=}}, {{-}}, {{*}} | A decorative line of =, *, or - characters, primarily for dividers. |
+| Token                   | Value Source                                                                                      |
+|-------------------------|---------------------------------------------------------------------------------------------------|
+| {{TITLE}}               | TITLE Environment Variable                                                                        |
+| {{HOST}}                | Host name of the server                                                                           |
+| {{PORT}                 | The port the host is lisenting on (70 by default)                                                 |
+| {{CLIENT_IP_ADDRESS}}   | The IP Adress of the connected client                                                             |
+| {{SERVER}}              | Information about the GoGopher server running on the system                                       |
+| {{UPTIME}}              | The duration that the server has been up and running                                              |
+| {{CURRENT_CONNECTIONS}} | The number of connections currently being served. (>1 will be very rare)                          |
+| {{TOTAL_CONNECTIONS}}   | Total number of connections the server has handled since it started up. (Not a persistent total.) |
+| {{OS}}                  | The operating system of the server                                                                |
+| {{ARCH}}                | The servers CPU architectire                                                                      |
+| {{CPUS}}                | The number of CPUS/Cores on the server                                                            |
+| {{ENTRIES}}             | Selectors for the contents of the directory                                                       |
+| {{=}}, {{-}}, {{*}}     | A decorative line of =, *, or - characters, primarily for dividers.                               |
+
+There are some examples of .gophermap templates in the *gophermap-templates* directory.
 
 # Docker
 
