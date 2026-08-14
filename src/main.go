@@ -48,7 +48,11 @@ func printConfiguration() {
 
 func startServer() core.IServer {
 	log.Println("Starting server...")
-	var svr, err = server.NewServer(cfg.HostName, cfg.BindAddress, cfg.Port, cfg.GopherRoot,
+	var svr, err = server.NewServer(
+		cfg.HostName,
+		cfg.BindAddress,
+		cfg.Port,
+		cfg.GopherRoot,
 		cfg.RequestTimeoutDuration)
 	if svr != nil {
 		middleware.AddFirewallMiddleware(svr)
