@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"gogopher/src/configuration"
+	"gogopher/src/core"
 	"gogopher/src/middleware"
 	"gogopher/src/server"
 	"gogopher/src/utility"
@@ -45,7 +46,7 @@ func printConfiguration() {
 
 }
 
-func startServer() server.IServer {
+func startServer() core.IServer {
 	log.Println("Starting server...")
 	var svr, err = server.NewServer(cfg.HostName, cfg.BindAddress, cfg.Port, cfg.GopherRoot,
 		cfg.RequestTimeoutDuration)
@@ -62,7 +63,7 @@ func startServer() server.IServer {
 	return svr
 }
 
-func stopServer(svr server.IServer) error {
+func stopServer(svr core.IServer) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	var err = svr.Stop(ctx)
