@@ -134,14 +134,14 @@ func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, svrInfo core
 	}
 
 	content := string(data)
-	host, _, err := net.SplitHostPort(conn.RemoteAddr().String())
+	clientIP, _, err := net.SplitHostPort(conn.RemoteAddr().String())
 
 	// Replace simple tokens first
 	tokens := map[string]string{
 		"TITLE":               svrInfo.GopherHoleName,
 		"HOST":                svrInfo.HostName,
 		"PORT":                svrInfo.Port,
-		"CLIENT_IP_ADDRESS":   host,
+		"CLIENT_IP_ADDRESS":   clientIP,
 		"SERVER":              svrInfo.ServerSoftwareName + " (" + svrInfo.ServerSoftwareVersion + ") " + svrInfo.ServerSoftwareLicense,
 		"UPTIME":              utility.FormatDuration(svrInfo.Uptime),
 		"CURRENT_CONNECTIONS": fmt.Sprintf("%d", svrInfo.CurrentConnections),
