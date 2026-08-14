@@ -13,6 +13,7 @@ const (
 	AppName   = "Wes C's Go Gopher Server"
 	Version   = "0.1.1"
 	Copyright = "Copyright©️ 2026 Wes C"
+	License   = "MIT License"
 	Link      = "https://github.com/wescc-dev/gogopher"
 	Footer    = "i                   ------ Go Gopher Server© Wes C. -----\t\terror.host\t1\r\n"
 )
@@ -24,6 +25,10 @@ type Configuration struct {
 	Port                   string
 	GopherRoot             string
 	FireWallConfigFile     string
+	AppName                string
+	AppVersion             string
+	AppCopyright           string
+	AppLicense             string
 	GophermapTemplateName  string
 	RequestTimeoutDuration time.Duration
 	OS                     string
@@ -51,6 +56,10 @@ func GetConfiguration() Configuration {
 			GopherRoot:             getEnv("GOPHER_ROOT", "gopher-root"),
 			FireWallConfigFile:     getEnv("FIREWALL_CONFIG_FILE", "firewall-config.json"),
 			GophermapTemplateName:  ".gophermap",
+			AppName:                AppName,
+			AppVersion:             Version,
+			AppCopyright:           Copyright,
+			AppLicense:             License,
 			RequestTimeoutDuration: time.Duration(requestTimeoutSeconds) * time.Second,
 			OS:                     runtime.GOOS,
 			Architecture:           runtime.GOARCH,

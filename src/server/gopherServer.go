@@ -21,8 +21,8 @@ const GophermapTemplateName = ".gophermap"
 
 var cfg = configuration.GetConfiguration()
 
-// server is a simple gopher server
-type server struct {
+// gopherServer is a simple gopherServer
+type gopherServer struct {
 	Hostname               string
 	BindAddr               string
 	Port                   string
@@ -63,7 +63,7 @@ func NewServer(
 		return nil, fmt.Errorf("gopherRoot cannot be empty")
 	}
 
-	return &server{
+	return &gopherServer{
 		Hostname:               hostname,
 		BindAddr:               bindAddr,
 		Port:                   port,
@@ -77,7 +77,7 @@ func NewServer(
 	}, nil
 }
 
-func (s *server) Start() error {
+func (s *gopherServer) Start() error {
 	ln, err := net.Listen("tcp", s.BindAddr+":"+s.Port)
 	if err != nil {
 		return err
@@ -98,15 +98,15 @@ func (s *server) Start() error {
 	return nil
 }
 
-func (s *server) AddMiddleware(middleware core.Middleware) {
+func (s *gopherServer) AddMiddleware(middleware core.Middleware) {
 	s.Middlewares = append(s.Middlewares, middleware)
 }
-func (s *server) IsStarted() bool {
+func (s *gopherServer) IsStarted() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.listener != nil
 }
-func (s *server) Stop(ctx context.Context) error {
+func (s *gopherServer) Stop(ctx context.Context) error {
 	s.stopOnce.Do(func() {
 		log.Println("Shutting down server...")
 		s.mu.Lock()
@@ -148,20 +148,20 @@ func (s *server) Stop(ctx context.Context) error {
 	}
 }
 
-func (s *server) ConnectionCount() int {
+func (s *gopherServer) ConnectionCount() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return len(s.conns)
 }
 
-func (s *server) UpTime() time.Duration {
+func (s *gopherServer) UpTime() time.Duration {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t := s.stopTime.Sub(s.startTime)
 	return t
 }
 
-func (s *server) acceptLoop() {
+func (s *gopherServer) acceptLoop() {
 	defer close(s.acceptDone)
 	for {
 		conn, err := s.listener.Accept()
@@ -179,7 +179,7 @@ func (s *server) acceptLoop() {
 	}
 }
 
-func (s *server) trackConn(c net.Conn) {
+func (s *gopherServer) trackConn(c net.Conn) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.conns[c] = struct{}{}
@@ -188,7 +188,7 @@ func (s *server) trackConn(c net.Conn) {
 
 }
 
-func (s *server) untrackConn(c net.Conn) {
+func (s *gopherServer) untrackConn(c net.Conn) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.conns, c)
@@ -196,14 +196,14 @@ func (s *server) untrackConn(c net.Conn) {
 	log.Println("Connection closed:", c.RemoteAddr(), "remaining:", cons)
 }
 
-func (s *server) useMiddleware(h core.HandlerFunc) core.HandlerFunc {
+func (s *gopherServer) useMiddleware(h core.HandlerFunc) core.HandlerFunc {
 	for i := len(s.Middlewares) - 1; i >= 0; i-- {
 		h = s.Middlewares[i](h)
 	}
 	return h
 }
 
-func (s *server) handleClientConnection(conn net.Conn, handler core.HandlerFunc) {
+func (s *gopherServer) handleClientConnection(conn net.Conn, handler core.HandlerFunc) {
 	defer s.clientWaitGroup.Done()
 	defer s.untrackConn(conn)
 	defer func(conn net.Conn) {
@@ -218,7 +218,7 @@ func (s *server) handleClientConnection(conn net.Conn, handler core.HandlerFunc)
 	log.Println("Request processed:", conn.RemoteAddr())
 }
 
-func (s *server) processRequest(handler core.HandlerFunc, conn net.Conn, gopherRoot string) error {
+func (s *gopherServer) processRequest(handler core.HandlerFunc, conn net.Conn, gopherRoot string) error {
 	if s.RequestTimeoutDuration > 0 {
 		_ = conn.SetReadDeadline(time.Now().Add(s.RequestTimeoutDuration))
 	}
@@ -240,7 +240,7 @@ func (s *server) processRequest(handler core.HandlerFunc, conn net.Conn, gopherR
 	return handler(conn, gopherRoot, selector, s.RequestTimeoutDuration)
 }
 
-func (s *server) serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.Duration) error {
+func (s *gopherServer) serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.Duration) error {
 	clean := filepath.Clean("/" + selector) // force selector to be relative
 	cleanPath := filepath.Join(rootDir, clean)
 	realRoot, _ := filepath.Abs(rootDir)

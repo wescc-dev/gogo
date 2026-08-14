@@ -39,6 +39,7 @@ func (d *DirectorySelectorHandler) Select(conn net.Conn, gopherRootDir string, s
 	}
 	return result, nil
 }
+
 func (d *DirectorySelectorHandler) serveDirectory(conn net.Conn, selectorPath string, selector string, timeOut time.Duration) error {
 	defer func(conn net.Conn, t time.Time) {
 		_ = conn.SetReadDeadline(t)
@@ -89,7 +90,6 @@ func (d *DirectorySelectorHandler) serveDirectory(conn net.Conn, selectorPath st
 }
 
 func (d *DirectorySelectorHandler) serveGopherMap(conn net.Conn, selectorPath string, timeOut time.Duration) (bool, error) {
-	// Regenerate the gophermap if it's outdated
 	gophermapPath := filepath.Join(selectorPath, "gophermap")
 	gophermapTemplatePath := filepath.Join(selectorPath, d.cfg.GophermapTemplateName)
 	gopherMapExists := utility.FileExists(gophermapPath)
@@ -112,6 +112,7 @@ func (d *DirectorySelectorHandler) serveGopherMap(conn net.Conn, selectorPath st
 	}
 	return false, nil
 }
+
 func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, dirPath string) error {
 	if info, err := os.Stat(d.cfg.GopherRoot); !(err == nil && info.IsDir()) {
 		if err := os.MkdirAll(d.cfg.GopherRoot, os.ModePerm); err != nil {
@@ -128,13 +129,17 @@ func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, dirPath stri
 
 	// Replace simple tokens first
 	tokens := map[string]string{
-		"TITLE":   d.cfg.Title,
-		"VERSION": configuration.Version,
-		"HOST":    d.cfg.HostName,
-		"BIND":    d.cfg.BindAddress,
-		"=":       "======================================================================",
-		"*":       "**********************************************************************",
-		"-":       "----------------------------------------------------------------------",
+		"TITLE":  d.cfg.Title,
+		"HOST":   d.cfg.HostName,
+		"BIND":   d.cfg.BindAddress,
+		"SERVER": d.cfg.AppName + " (" + d.cfg.AppVersion + ") " + d.cfg.AppLicense,
+		"OS":     d.cfg.OS,
+		"ARCH":   d.cfg.Architecture,
+		"CPUS":   fmt.Sprintf("%d", d.cfg.NumCpus),
+
+		"=": "======================================================================",
+		"*": "**********************************************************************",
+		"-": "----------------------------------------------------------------------",
 	}
 
 	for key, val := range tokens {
@@ -154,6 +159,7 @@ func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, dirPath stri
 	}
 	return nil
 }
+
 func (d *DirectorySelectorHandler) generateEntries(dirPath string) (string, error) {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {

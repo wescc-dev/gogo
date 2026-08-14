@@ -10,7 +10,7 @@ GoGopher is provided under the MIT License. See the [LICENSE](LICENSE) file incl
 
 ***You can skip to the Docker section below if you don't want to build from source.***
 
-The source code for GoGOpher is available at:
+The source code for GoGopher is available at:
 
 ```
 https://github.com/wescc-dev/gogopher
@@ -103,7 +103,7 @@ Gopher's default behavior for directory selectors is to present a menu of the di
 
 Gophermaps allow operators to customize directory menus. If any directory contains a file named *gophermap*, it is sent instead of the directory's contents.
 
-GoGopher provides a way to generate gophermaps from a template (not subdirectories). 
+GoGopher provides a way to generate gophermaps from a template in any directory of the GOPHER_ROOT hierarchy. 
 If a file named *.gophermap* is found in the directory, GoGopher will 
 serve a dynamically generated gophermap if there isn't a file named *gophermap* in the directory.
 
