@@ -2,7 +2,7 @@ package selectorHandler
 
 import (
 	"fmt"
-	"gogopher/src/configuration"
+	"gogopher/src/core"
 	"gogopher/src/utility"
 	"net"
 	"path/filepath"
@@ -10,11 +10,11 @@ import (
 )
 
 type FileSelectorHandler struct {
-	cfg *configuration.Configuration
+	svrInfoProvider core.IServerInfoViewProvider
 }
 
-func NewFileSelectorHandler(cfg *configuration.Configuration) ISelectorHandler {
-	return &FileSelectorHandler{cfg: cfg}
+func NewFileSelectorHandler(svrInfoProvider core.IServerInfoViewProvider) ISelectorHandler {
+	return &FileSelectorHandler{svrInfoProvider: svrInfoProvider}
 }
 
 func (s *FileSelectorHandler) Select(conn net.Conn, gopherRootDir string, selector string, timeOut time.Duration) (*SelectResult, error) {

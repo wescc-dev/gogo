@@ -12,6 +12,7 @@ import (
 	"log"
 	"net"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -31,8 +32,10 @@ type gopherServer struct {
 	RequestTimeoutDuration time.Duration
 	GopherRoot             string
 
-	startTime       time.Time
-	stopTime        time.Time
+	startTime        time.Time
+	stopTime         time.Time
+	totalConnections int
+
 	selectors       []selectorHandler.ISelectorHandler
 	mu              sync.Mutex
 	listener        net.Listener
@@ -41,6 +44,28 @@ type gopherServer struct {
 	acceptDone      chan struct{}
 	stopOnce        sync.Once
 	stopRequested   bool
+}
+
+func (s *gopherServer) GetCurrentServerInfo() core.ServerInfoView {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return core.ServerInfoView{
+		HostName:                s.Hostname,
+		Port:                    s.Port,
+		StartTime:               s.startTime,
+		Uptime:                  time.Now().Sub(s.startTime),
+		TotalConnections:        s.totalConnections,
+		CurrentConnections:      len(s.conns),
+		OS:                      runtime.GOOS,
+		Architecture:            runtime.GOARCH,
+		NumCpus:                 runtime.NumCPU(),
+		GopherRoot:              s.GopherRoot,
+		GophermapTemplateName:   cfg.GophermapTemplateName,
+		ServerSoftwareName:      cfg.ServerSoftwareName,
+		ServerSoftwareVersion:   cfg.ServerSoftwareVersion,
+		ServerSoftwareCopyright: cfg.ServerSoftwareCopyright,
+		ServerSoftwareLicense:   cfg.ServerSoftwareLicense,
+	}
 }
 
 func NewServer(
@@ -87,8 +112,8 @@ func (s *gopherServer) Start() error {
 	s.mu.Lock()
 	s.Handler = s.useMiddleware(s.serveSelector)
 	s.selectors = []selectorHandler.ISelectorHandler{
-		selectorHandler.NewDirectorySelectorHandler(cfg),
-		selectorHandler.NewFileSelectorHandler(cfg)}
+		selectorHandler.NewDirectorySelectorHandler(s),
+		selectorHandler.NewFileSelectorHandler(s)}
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})
 	s.startTime = time.Now()
@@ -148,19 +173,6 @@ func (s *gopherServer) Stop(ctx context.Context) error {
 	}
 }
 
-func (s *gopherServer) ConnectionCount() int {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return len(s.conns)
-}
-
-func (s *gopherServer) UpTime() time.Duration {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	t := s.stopTime.Sub(s.startTime)
-	return t
-}
-
 func (s *gopherServer) acceptLoop() {
 	defer close(s.acceptDone)
 	for {
@@ -184,6 +196,7 @@ func (s *gopherServer) trackConn(c net.Conn) {
 	defer s.mu.Unlock()
 	s.conns[c] = struct{}{}
 	var cons = len(s.conns)
+	s.totalConnections += cons
 	log.Println("New connection:", c.RemoteAddr(), "total:", cons)
 
 }

@@ -13,8 +13,7 @@ type Middleware func(HandlerFunc) HandlerFunc
 type IServer interface {
 	Start() error
 	Stop(ctx context.Context) error
-	ConnectionCount() int
-	UpTime() time.Duration
 	AddMiddleware(middleware Middleware)
 	IsStarted() bool
+	GetCurrentServerInfo() ServerInfoView
 }

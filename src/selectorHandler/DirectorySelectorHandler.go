@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"gogopher/src/configuration"
+	"gogopher/src/core"
 	"gogopher/src/utility"
 	"io/fs"
 	"log"
@@ -19,11 +20,15 @@ import (
 
 // DirectorySelectorHandler handles directory selectors
 type DirectorySelectorHandler struct {
-	cfg *configuration.Configuration
+	svrInfoViewProvider core.IServerInfoViewProvider
 }
 
-func NewDirectorySelectorHandler(cfg *configuration.Configuration) ISelectorHandler {
-	return &DirectorySelectorHandler{cfg: cfg}
+func NewDirectorySelectorHandler(
+	svrInfoViewProvider core.IServerInfoViewProvider) ISelectorHandler {
+
+	return &DirectorySelectorHandler{
+		svrInfoViewProvider: svrInfoViewProvider,
+	}
 }
 
 func (d *DirectorySelectorHandler) Select(conn net.Conn, gopherRootDir string, selector string, timeOut time.Duration) (*SelectResult, error) {
@@ -55,23 +60,24 @@ func (d *DirectorySelectorHandler) serveDirectory(conn net.Conn, selectorPath st
 
 	// Otherwise list directory
 	entries, err := os.ReadDir(selectorPath)
+	svrInfo := d.svrInfoViewProvider.GetCurrentServerInfo()
 	if err != nil {
 		if _, eerr := fmt.Fprintf(conn,
 			"3Error reading directory\t%s/\t%s\t%s\r\n",
-			selectorPath, d.cfg.HostName, d.cfg.Port); eerr != nil {
+			selectorPath, svrInfo.HostName, svrInfo.Port); eerr != nil {
 			return fmt.Errorf("cannot write error message: %w", err)
 		}
 		return fmt.Errorf("cannot read directory: %w", err)
 	}
 	if len(entries) == 0 {
-		emptymsg := buildSelectorWithPictogram("3", "", "Directory is empty", "", d.cfg.HostName, d.cfg.Port)
+		emptymsg := buildSelectorWithPictogram("3", "", "Directory is empty", "", svrInfo.HostName, svrInfo.Port)
 		if _, err := conn.Write([]byte(emptymsg)); err != nil {
 			return fmt.Errorf("cannot write error message: %w", err)
 		}
 	} else {
 		sortDirectoryEntries(entries)
 		for _, e := range entries {
-			if gopherEntry, err := buildGopherEntry(e, selector, d.cfg.HostName, d.cfg.Port); err != nil {
+			if gopherEntry, err := buildGopherEntry(e, selector, svrInfo.HostName, svrInfo.Port); err != nil {
 				log.Println(err)
 				continue
 			} else {
@@ -91,8 +97,9 @@ func (d *DirectorySelectorHandler) serveDirectory(conn net.Conn, selectorPath st
 }
 
 func (d *DirectorySelectorHandler) serveGopherMap(conn net.Conn, selectorPath string, timeOut time.Duration) (bool, error) {
+	svrInfo := d.svrInfoViewProvider.GetCurrentServerInfo()
 	gophermapPath := filepath.Join(selectorPath, "gophermap")
-	gophermapTemplatePath := filepath.Join(selectorPath, d.cfg.GophermapTemplateName)
+	gophermapTemplatePath := filepath.Join(selectorPath, svrInfo.GophermapTemplateName)
 	gopherMapExists := utility.FileExists(gophermapPath)
 	gopherMapTemplateExists := utility.FileExists(gophermapTemplatePath)
 
@@ -104,7 +111,7 @@ func (d *DirectorySelectorHandler) serveGopherMap(conn net.Conn, selectorPath st
 		}
 		return true, nil
 	} else if gopherMapTemplateExists {
-		err := d.generateGopherMap(conn, selectorPath)
+		err := d.generateGopherMap(conn, svrInfo, selectorPath)
 		if err != nil {
 			return false, fmt.Errorf("cannot generate gophermap: %w", err)
 		}
@@ -114,32 +121,37 @@ func (d *DirectorySelectorHandler) serveGopherMap(conn net.Conn, selectorPath st
 	return false, nil
 }
 
-func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, dirPath string) error {
-	if info, err := os.Stat(d.cfg.GopherRoot); !(err == nil && info.IsDir()) {
-		if err := os.MkdirAll(d.cfg.GopherRoot, os.ModePerm); err != nil {
-			return fmt.Errorf("GopherRoot %s does not exist and could not be created. No files will be served", d.cfg.GopherRoot)
+func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, svrInfo core.ServerInfoView, dirPath string) error {
+	if info, err := os.Stat(svrInfo.GopherRoot); !(err == nil && info.IsDir()) {
+		if err := os.MkdirAll(svrInfo.GopherRoot, os.ModePerm); err != nil {
+			return fmt.Errorf("GopherRoot %s does not exist and could not be created. No files will be served", svrInfo.GopherRoot)
 		}
 	}
-	gophermapTemplatePath := filepath.Join(dirPath, d.cfg.GophermapTemplateName)
+	gophermapTemplatePath := filepath.Join(dirPath, svrInfo.GophermapTemplateName)
 	data, err := os.ReadFile(gophermapTemplatePath)
 	if err != nil {
 		return fmt.Errorf("cannot open .gophermap: %w", err)
 	}
 
 	content := string(data)
+	host, _, err := net.SplitHostPort(conn.RemoteAddr().String())
 
 	// Replace simple tokens first
 	tokens := map[string]string{
-		"TITLE":  d.cfg.Title,
-		"HOST":   d.cfg.HostName,
-		"BIND":   d.cfg.BindAddress,
-		"SERVER": d.cfg.AppName + " (" + d.cfg.AppVersion + ") " + d.cfg.AppLicense,
-		"OS":     d.cfg.OS,
-		"ARCH":   d.cfg.Architecture,
-		"CPUS":   fmt.Sprintf("%d", d.cfg.NumCpus),
-		"=":      "======================================================================",
-		"*":      "**********************************************************************",
-		"-":      "----------------------------------------------------------------------",
+		"TITLE":               svrInfo.GopherHoleName,
+		"HOST":                svrInfo.HostName,
+		"PORT":                svrInfo.Port,
+		"CLIENT_IP_ADDRESS":   host,
+		"SERVER":              svrInfo.ServerSoftwareName + " (" + svrInfo.ServerSoftwareVersion + ") " + svrInfo.ServerSoftwareLicense,
+		"UPTIME":              utility.FormatDuration(svrInfo.Uptime),
+		"CURRENT_CONNECTIONS": fmt.Sprintf("%d", svrInfo.CurrentConnections),
+		"TOTAL_CONNECTIONS":   fmt.Sprintf("%d", svrInfo.TotalConnections),
+		"OS":                  svrInfo.OS,
+		"ARCH":                svrInfo.Architecture,
+		"CPUS":                fmt.Sprintf("%d", svrInfo.NumCpus),
+		"=":                   "======================================================================",
+		"*":                   "**********************************************************************",
+		"-":                   "----------------------------------------------------------------------",
 	}
 
 	for key, val := range tokens {
@@ -165,13 +177,12 @@ func (d *DirectorySelectorHandler) generateEntries(dirPath string) (string, erro
 	if err != nil {
 		return "", fmt.Errorf("cannot read gopher root: %w", err)
 	}
-
 	sortDirectoryEntries(entries)
-
 	var entriesBuf bytes.Buffer
 	w := bufio.NewWriter(&entriesBuf)
+	svrInfo := d.svrInfoViewProvider.GetCurrentServerInfo()
 	for _, e := range entries {
-		if s, err := buildGopherEntry(e, strings.TrimPrefix(dirPath, d.cfg.GopherRoot), d.cfg.HostName, d.cfg.Port); err != nil {
+		if s, err := buildGopherEntry(e, strings.TrimPrefix(dirPath, svrInfo.GopherRoot), svrInfo.HostName, svrInfo.Port); err != nil {
 			log.Println(err)
 			continue
 		} else {
