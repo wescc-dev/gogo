@@ -103,9 +103,19 @@ Gopher's default behavior for directory selectors is to present a menu of the di
 
 Gophermaps allow operators to customize directory menus. If any directory contains a file named *gophermap*, it is sent instead of the directory's contents.
 
-GoGopher provides a way to generate the top-level gophermap from a template (not subdirectories). If a file named *.gophermap* is found in the GOPHER_ROOT directory, GoGopher will generate a gophermap file if one does not already exist.
+GoGopher provides a way to generate gophermaps from a template (not subdirectories). 
+If a file named *.gophermap* is found in the directory, GoGopher will 
+serve a dynamically generated gophermap if there isn't a file named *gophermap* in the directory.
 
-At startup, GoGopher generates the gophermap by substituting *tokens* with the values of variables dynamically. The server must be restarted to regenerate the top-level gophermap. *(Dynamic generation, including subdirectory support, is planned.)*
+**If neither *.gophermap* nor *gophermap* is found, the directory's contents are served.**
+
+| Gophermap File      | Content sent to Client                                              |
+|---------------------|---------------------------------------------------------------------|
+| gophermap           | The contents of the file                                            |
+| .gophermap          | A dynamically generated gophermap from the template .gophermap file |
+| *neither* (default) | The contents of the directory                                       |
+
+GoGopher generates the gophermap dynamically by substituting *tokens* with the values of variables dynamically.
 
 | Token               | Value Source                                                        |
 | ------------------- | ------------------------------------------------------------------- |
