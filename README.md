@@ -165,28 +165,40 @@ See above for the **environment variables**
 
 Instead of pulling and configuring the image when you run it, you can run the default image with the *docker-compose.yaml* file in your git working directory of this repository.
 
-Be sure to set the network, ports, volume, and environment variables to suit.
+This is an example. Be sure to set the network, ports, volume, and environment variables to suit.
 
 ```
-name: gogopher  
-services:  
-  gogopher:  
-    image: dbppgpmdtacr/gogopher:latest  
-    container_name: "gogopher"  
-    volumes:  
-      - gopher-root:/gopher-root  
-    environment:  
-      - TITLE="Wes C's Gopher Server"  
-      - HOSTNAME=localhost  
-      - HOST_BIND_IP=0.0.0.0  
-      - PORT=70  
-      - GOPHER_ROOT=/gopher-root  
-      - FIREWALL_CONFIG_FILE=firewall-config.json  
-      - REQUEST_TIMEOUT_SECONDS=30  
-    ports:  
-      - '70:70'  
-volumes:  
+name: gogopher
+services:
+  gogopher:
+    image: dbppgpmdtacr/gogopher:latest
+    container_name: "gogopher"
+    volumes:
+      # Mount the gopher root directory read-only.
+      # Consider binding a host path for easier updates.
+
+      - gopher-root:/gopher-root:ro
+
+      # Consider binding these config files to host paths for easier updates
+      # It is recommended to use read-only mode.
+
+      #- ./firewall-config.json:/firewall-config.json:ro
+      #- ./file-access-config.json:/file-access-config.json:ro
+    environment:
+      - TITLE="Wes C's Gopher Server"
+      - HOSTNAME=localhost
+      - HOST_BIND_IP=0.0.0.0
+      - PORT=70
+      - GOPHER_ROOT=/gopher-root
+      - FIREWALL_CONFIG_FILE=firewall-config.json
+      - FILE_ACCESS_CONFIG_FILE=file-access-config.json
+      - REQUEST_TIMEOUT_SECONDS=30
+      - REQUEST_MAXIMUM_BYTES=1024
+    ports:
+      - '70:70'
+volumes:
   gopher-root:
+
 ```
 
 #### Setup
