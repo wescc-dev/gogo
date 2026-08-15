@@ -128,13 +128,57 @@ func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, svrInfo core
 		}
 	}
 	gophermapTemplatePath := filepath.Join(dirPath, svrInfo.GophermapTemplateName)
-	data, err := os.ReadFile(gophermapTemplatePath)
-	if err != nil {
-		return fmt.Errorf("cannot open .gophermap: %w", err)
+	templateBytes, templateErr := os.ReadFile(gophermapTemplatePath)
+	if templateErr != nil {
+		return fmt.Errorf("cannot open .gophermap: %w", templateErr)
+	}
+	templateContent := string(templateBytes)
+
+	// Replace Tokens
+	if content, err := d.replaceSingleTokens(conn, svrInfo, templateContent); err != nil {
+		return fmt.Errorf("cannot replace tokens: %w", err)
+	} else {
+		templateContent = content
 	}
 
-	content := string(data)
+	// Replace {{ENTRIES}} with directory entries
+	if content, err := d.replaceDirectoryEntriesToken(dirPath, templateContent); err != nil {
+		return fmt.Errorf("cannot replace directory entries token: %w", err)
+	} else {
+		templateContent = content
+	}
+
+	// Add the footer
+	templateContent = d.addFooter(templateContent)
+
+	// Write the gophermap
+	if _, err := conn.Write([]byte(templateContent)); err != nil {
+		return fmt.Errorf("cannot write gophermap: %w", err)
+	}
+	return nil
+}
+
+func (d *DirectorySelectorHandler) addFooter(templateContent string) string {
+	templateContent += configuration.Footer
+	return templateContent
+}
+
+func (d *DirectorySelectorHandler) replaceDirectoryEntriesToken(dirPath string, content string) (string, error) {
+	// Now handle {{ENTRIES}}
+	entries, err := d.generateEntries(dirPath)
+	if err != nil {
+		return content, err
+	}
+	// Replace tokens
+	content = strings.ReplaceAll(content, "{{ENTRIES}}", entries)
+	return content, nil
+}
+
+func (d *DirectorySelectorHandler) replaceSingleTokens(conn net.Conn, svrInfo core.ServerInfoView, content string) (string, error) {
 	clientIP, _, err := net.SplitHostPort(conn.RemoteAddr().String())
+	if err != nil {
+		return content, err
+	}
 
 	// Replace simple tokens first
 	tokens := map[string]string{
@@ -157,19 +201,7 @@ func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, svrInfo core
 	for key, val := range tokens {
 		content = strings.ReplaceAll(content, "{{"+key+"}}", val)
 	}
-
-	// Now handle {{ENTRIES}}
-	entries, err := d.generateEntries(dirPath)
-	if err != nil {
-		return err
-	}
-	// Replace tokens
-	content = strings.ReplaceAll(content, "{{ENTRIES}}", entries)
-	content += configuration.Footer
-	if _, err := conn.Write([]byte(content)); err != nil {
-		return fmt.Errorf("cannot write gophermap: %w", err)
-	}
-	return nil
+	return content, nil
 }
 
 func (d *DirectorySelectorHandler) generateEntries(dirPath string) (string, error) {
