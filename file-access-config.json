@@ -1,0 +1,28 @@
+{
+  "enabled": true,
+  "excludedPaths": [
+    "^\\.",
+    "^\\.$",
+    "^\\.\\.$",
+    "^@",
+    "^#",
+    ".*\\.bak$",
+    ".*\\.tmp$",
+    ".*\\.swp$",
+    ".*\\.swo$",
+    ".*\\.old$",
+    ".*\\.orig$",
+    ".*\\.backup$",
+    "^~.*",
+    "^\\._.*",
+    "Thumbs\\.db$",
+    "desktop\\.ini$",
+    ".*secret.*",
+    ".*passwd.*",
+    ".*id_rsa.*",
+    ".*id_ed25519.*",
+    ".*token.*",
+    ".*credential.*",
+    ".*auth.*"
+  ]
+}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gogopher/src/configuration"
 	"gogopher/src/core"
+	"gogopher/src/security"
 	"gogopher/src/utility"
 	"io/fs"
 	"log"
@@ -204,9 +205,31 @@ func (d *DirectorySelectorHandler) replaceSingleTokens(conn net.Conn, svrInfo co
 	}
 	return content, nil
 }
+func readDirFiltered(dirPath string) ([]fs.DirEntry, error) {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	filtered := make([]fs.DirEntry, 0, len(entries))
+
+	for _, entry := range entries {
+		fullPath := filepath.Join(dirPath, entry.Name())
+		if err := security.AssertFileSystemAccess(fullPath); err != nil {
+			fmt.Println("REJECT:", fullPath, "ERR:", err)
+		} else {
+			fmt.Println("ALLOW:", fullPath)
+		}
+		if err := security.AssertFileSystemAccess(fullPath); err == nil {
+			filtered = append(filtered, entry)
+		}
+	}
+
+	return filtered, nil
+}
 
 func (d *DirectorySelectorHandler) generateEntries(dirPath string) (string, error) {
-	entries, err := os.ReadDir(dirPath)
+	entries, err := readDirFiltered(dirPath)
 	if err != nil {
 		return "", fmt.Errorf("cannot read gopher root: %w", err)
 	}

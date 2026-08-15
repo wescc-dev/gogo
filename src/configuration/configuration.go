@@ -26,6 +26,7 @@ type Configuration struct {
 	Port                    string
 	GopherRoot              string
 	FireWallConfigFile      string
+	FileAccessConfigFile    string
 	ServerSoftwareName      string
 	ServerSoftwareVersion   string
 	ServerSoftwareCopyright string
@@ -66,6 +67,7 @@ func GetConfiguration() *Configuration {
 			Port:                    getEnv("PORT", "70"),
 			GopherRoot:              getEnv("GOPHER_ROOT", "gopher-root"),
 			FireWallConfigFile:      getEnv("FIREWALL_CONFIG_FILE", "firewall-config.json"),
+			FileAccessConfigFile:    getEnv("FILE_ACCESS_CONFIG_FILE", "file-access-config.json"),
 			GophermapTemplateName:   ".gophermap",
 			ServerSoftwareName:      AppName,
 			ServerSoftwareVersion:   Version,
