@@ -2,7 +2,5 @@ gogopher
 .idea/
 .run/
 docker-build.sh
-gophermap
-/docker-build-push.sh
-/docker-build.sh
 /docker-compose.local.yaml
+/build-scripts/
