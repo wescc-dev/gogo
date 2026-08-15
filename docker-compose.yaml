@@ -4,7 +4,11 @@ services:
     image: dbppgpmdtacr/gogopher:latest
     container_name: "gogopher"
     volumes:
+      # Mount the gopher root directory read-only.
       - gopher-root:/gopher-root:ro
+      # Consider mounting the firewall config file for easier updates
+      # If you do, it is recommended to use read-only mode
+      #- ./firewall-config.json:/firewall-config.json:ro
     environment:
       - TITLE="Wes C's Gopher Server"
       - HOSTNAME=localhost
@@ -17,4 +21,3 @@ services:
       - '70:70'
 volumes:
   gopher-root:
-    
