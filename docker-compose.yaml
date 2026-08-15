@@ -4,7 +4,7 @@ services:
     image: dbppgpmdtacr/gogopher:latest
     container_name: "gogopher"
     volumes:
-      - gopher-root:/gopher-root
+      - gopher-root:/gopher-root:ro
     environment:
       - TITLE="Wes C's Gopher Server"
       - HOSTNAME=localhost
@@ -17,3 +17,4 @@ services:
       - '70:70'
 volumes:
   gopher-root:
+    
