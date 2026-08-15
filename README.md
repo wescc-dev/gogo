@@ -124,6 +124,7 @@ GoGopher generates the gophermap dynamically by substituting *tokens* with the v
 | {{PORT}                 | The port the host is lisenting on (70 by default)                                                 |
 | {{CLIENT_IP_ADDRESS}}   | The IP Adress of the connected client                                                             |
 | {{SERVER}}              | Information about the GoGopher server running on the system                                       |
+| {{START_TIME}}          | The date/time the server started                                                                  |
 | {{UPTIME}}              | The duration that the server has been up and running                                              |
 | {{CURRENT_CONNECTIONS}} | The number of connections currently being served. (>1 will be very rare)                          |
 | {{TOTAL_CONNECTIONS}}   | Total number of connections the server has handled since it started up. (Not a persistent total.) |

@@ -53,7 +53,8 @@ func startServer() core.IServer {
 		cfg.BindAddress,
 		cfg.Port,
 		cfg.GopherRoot,
-		cfg.RequestTimeoutDuration)
+		cfg.RequestTimeoutDuration,
+		cfg.RequestMaximumBytes)
 	if svr != nil {
 		middleware.AddFirewallMiddleware(svr)
 	}

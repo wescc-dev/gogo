@@ -187,6 +187,7 @@ func (d *DirectorySelectorHandler) replaceSingleTokens(conn net.Conn, svrInfo co
 		"PORT":                svrInfo.Port,
 		"CLIENT_IP_ADDRESS":   clientIP,
 		"SERVER":              svrInfo.ServerSoftwareName + " (" + svrInfo.ServerSoftwareVersion + ") " + svrInfo.ServerSoftwareLicense,
+		"START_TIME":          svrInfo.StartTime.Format(time.RFC3339),
 		"UPTIME":              utility.FormatDuration(svrInfo.Uptime),
 		"CURRENT_CONNECTIONS": fmt.Sprintf("%d", svrInfo.CurrentConnections),
 		"TOTAL_CONNECTIONS":   fmt.Sprintf("%d", svrInfo.TotalConnections),

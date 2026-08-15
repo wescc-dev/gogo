@@ -30,6 +30,7 @@ type gopherServer struct {
 	Handler                core.HandlerFunc
 	Middlewares            []core.Middleware
 	RequestTimeoutDuration time.Duration
+	RequestMaximumBytes    int
 	GopherRoot             string
 
 	startTime        time.Time
@@ -73,7 +74,8 @@ func NewServer(
 	bindAddr string,
 	port string,
 	gopherRoot string,
-	requestTimeoutDuration time.Duration) (core.IServer, error) {
+	requestTimeoutDuration time.Duration,
+	requestMaximumBytea int) (core.IServer, error) {
 
 	if strings.TrimSpace(hostname) == "" {
 		hostname = "localhost"
@@ -94,6 +96,7 @@ func NewServer(
 		Port:                   port,
 		GopherRoot:             gopherRoot,
 		RequestTimeoutDuration: requestTimeoutDuration,
+		RequestMaximumBytes:    requestMaximumBytea,
 		Middlewares:            []core.Middleware{},
 		selectors:              []selectorHandler.ISelectorHandler{},
 		clientWaitGroup:        sync.WaitGroup{},
@@ -126,11 +129,13 @@ func (s *gopherServer) Start() error {
 func (s *gopherServer) AddMiddleware(middleware core.Middleware) {
 	s.Middlewares = append(s.Middlewares, middleware)
 }
+
 func (s *gopherServer) IsStarted() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.listener != nil
 }
+
 func (s *gopherServer) Stop(ctx context.Context) error {
 	s.stopOnce.Do(func() {
 		log.Println("Shutting down server...")
@@ -243,9 +248,13 @@ func (s *gopherServer) processRequest(handler core.HandlerFunc, conn net.Conn, g
 		// Apply the timeout to the connection
 		_ = conn.SetReadDeadline(time.Now().Add(s.RequestTimeoutDuration))
 	}
-	reader := bufio.NewReader(conn)
+
+	reader := bufio.NewReader(io.LimitReader(conn, int64(s.RequestMaximumBytes)))
 	req, err := reader.ReadString('\n')
 	if err != nil {
+		if err == io.EOF {
+			return fmt.Errorf("request size exceeded maximum %d bytes", s.RequestMaximumBytes)
+		}
 		return fmt.Errorf("cannot read request: %w", err)
 	}
 	var selector = strings.TrimSpace(req)

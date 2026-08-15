@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"log"
 	"os"
 	"runtime"
 	"strconv"
@@ -31,6 +32,7 @@ type Configuration struct {
 	ServerSoftwareLicense   string
 	GophermapTemplateName   string
 	RequestTimeoutDuration  time.Duration
+	RequestMaximumBytes     int
 	OS                      string
 	Architecture            string
 	NumCpus                 int
@@ -42,11 +44,20 @@ func GetConfiguration() *Configuration {
 	if _configuration == nil {
 		var _ = godotenv.Load(".env")
 		var envRequestTimeoutSeconds = getEnv("READWRITE_TIMEOUT_SECONDS", "30")
-		var requestTimeoutSeconds int
+		var envRequestMaximumBytes = getEnv("REQUEST_MAXIMUM_BYTES", "1024")
+		var requestTimeoutSeconds int = 30
+		var requestMaximumBytes int = 1024
 		if val, err := strconv.Atoi(envRequestTimeoutSeconds); err != nil {
+			log.Println("Invalid value for READWRITE_TIMEOUT_SECONDS, using default value: 30")
 			requestTimeoutSeconds = 30
 		} else {
 			requestTimeoutSeconds = val
+		}
+		if val, err := strconv.Atoi(envRequestMaximumBytes); err != nil {
+			log.Println("Invalid value for REQUEST_MAXIMUM_BYTES, using default value: 1024")
+			requestMaximumBytes = 1024
+		} else {
+			requestMaximumBytes = val
 		}
 		_configuration = &Configuration{
 			Title:                   getEnv("TITLE", "Wes C's Gopher Hole"),
@@ -61,6 +72,7 @@ func GetConfiguration() *Configuration {
 			ServerSoftwareCopyright: Copyright,
 			ServerSoftwareLicense:   License,
 			RequestTimeoutDuration:  time.Duration(requestTimeoutSeconds) * time.Second,
+			RequestMaximumBytes:     requestMaximumBytes,
 			OS:                      runtime.GOOS,
 			Architecture:            runtime.GOARCH,
 			NumCpus:                 runtime.NumCPU(),

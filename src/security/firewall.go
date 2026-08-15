@@ -58,6 +58,7 @@ func (f *Firewall) FirewallFilter(ip string) error {
 	return nil
 
 }
+
 func (f *Firewall) isBlocked(ip string) bool {
 	for _, rule := range f.BlockedIps {
 		if ruleMatches(rule, ip) {
@@ -122,17 +123,39 @@ func wildcardIPv4Matches(rule, ip string) bool {
 	return true
 }
 
-func normalizeToIPv4(ip string) string {
-	parsed := net.ParseIP(ip)
-	if parsed == nil {
-		return ip
+type FirewallMode int
+
+const (
+	ModeUnknown FirewallMode = iota
+	ModeWhiteList
+	ModeBlackList
+)
+
+func (m *FirewallMode) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
 	}
 
-	// Convert IPv6-mapped IPv4 (::ffff:x.x.x.x) to IPv4
-	if v4 := parsed.To4(); v4 != nil {
-		return v4.String()
+	switch strings.ToLower(s) {
+	case "whitelist":
+		*m = ModeWhiteList
+	case "blacklist":
+		*m = ModeBlackList
+	default:
+		*m = ModeUnknown
 	}
 
-	// Otherwise return normalized IPv6
-	return parsed.String()
+	return nil
+}
+
+func (m *FirewallMode) toString() string {
+	switch *m {
+	case ModeWhiteList:
+		return "whitelist"
+	case ModeBlackList:
+		return "blacklist"
+	default:
+		return "unknown"
+	}
 }
