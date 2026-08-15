@@ -20,7 +20,7 @@ ENV TITLE="Wes C's Gopher Server" \
     PORT=70 \
     GOPHER_ROOT=/gopher-root \
     FIREWALL_CONFIG_FILE=firewall-config.json \
-    REQUEST_TIMEOUT_SECONDS=30
+    REQUEST_TIMEOUT_SECONDS=30 \
     REQUEST_MAXIMUM_BYTES=1024
 VOLUME /gopher-root
 EXPOSE 70
