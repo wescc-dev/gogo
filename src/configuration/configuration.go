@@ -44,10 +44,10 @@ var _configuration *Configuration = nil
 func GetConfiguration() *Configuration {
 	if _configuration == nil {
 		var _ = godotenv.Load(".env")
-		var envRequestTimeoutSeconds = getEnv("READWRITE_TIMEOUT_SECONDS", "30")
-		var envRequestMaximumBytes = getEnv("REQUEST_MAXIMUM_BYTES", "1024")
-		var requestTimeoutSeconds int = 30
-		var requestMaximumBytes int = 1024
+		envRequestTimeoutSeconds := getEnv("READWRITE_TIMEOUT_SECONDS", "30")
+		envRequestMaximumBytes := getEnv("REQUEST_MAXIMUM_BYTES", "1024")
+		requestTimeoutSeconds := 30
+		requestMaximumBytes := 1024
 		if val, err := strconv.Atoi(envRequestTimeoutSeconds); err != nil {
 			log.Println("Invalid value for READWRITE_TIMEOUT_SECONDS, using default value: 30")
 			requestTimeoutSeconds = 30
