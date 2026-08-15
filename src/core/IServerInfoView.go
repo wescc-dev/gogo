@@ -3,7 +3,7 @@ package core
 import "time"
 
 type ServerInfoView struct {
-	GopherHoleName          string
+	Title                   string
 	HostName                string
 	Port                    string
 	Uptime                  time.Duration

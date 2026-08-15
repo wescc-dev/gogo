@@ -24,6 +24,7 @@ var cfg = configuration.GetConfiguration()
 
 // gopherServer is a simple gopherServer
 type gopherServer struct {
+	Title                  string
 	Hostname               string
 	BindAddr               string
 	Port                   string
@@ -51,6 +52,7 @@ func (s *gopherServer) GetCurrentServerInfo() core.ServerInfoView {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return core.ServerInfoView{
+		Title:                   s.Title,
 		HostName:                s.Hostname,
 		Port:                    s.Port,
 		StartTime:               s.startTime,
@@ -70,6 +72,7 @@ func (s *gopherServer) GetCurrentServerInfo() core.ServerInfoView {
 }
 
 func NewServer(
+	Title string,
 	hostname string,
 	bindAddr string,
 	port string,
@@ -91,6 +94,7 @@ func NewServer(
 	}
 
 	return &gopherServer{
+		Title:                  Title,
 		Hostname:               hostname,
 		BindAddr:               bindAddr,
 		Port:                   port,

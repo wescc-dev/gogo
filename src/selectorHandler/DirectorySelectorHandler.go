@@ -183,7 +183,7 @@ func (d *DirectorySelectorHandler) replaceSingleTokens(conn net.Conn, svrInfo co
 
 	// Replace simple tokens first
 	tokens := map[string]string{
-		"TITLE":               svrInfo.GopherHoleName,
+		"TITLE":               svrInfo.Title,
 		"HOST":                svrInfo.HostName,
 		"PORT":                svrInfo.Port,
 		"CLIENT_IP_ADDRESS":   clientIP,

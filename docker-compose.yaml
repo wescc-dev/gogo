@@ -15,7 +15,7 @@ services:
       #- ./firewall-config.json:/firewall-config.json:ro
       #- ./file-access-config.json:/file-access-config.json:ro
     environment:
-      - TITLE="Wes C's Gopher Server"
+      - TITLE=Wes C's Gopher Hole
       - HOSTNAME=localhost
       - HOST_BIND_IP=0.0.0.0
       - PORT=70

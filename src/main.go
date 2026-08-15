@@ -49,6 +49,7 @@ func printConfiguration() {
 func startServer() core.IServer {
 	log.Println("Starting server...")
 	var svr, err = server.NewServer(
+		cfg.Title,
 		cfg.HostName,
 		cfg.BindAddress,
 		cfg.Port,
