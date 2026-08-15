@@ -66,7 +66,7 @@ REQUEST_MAXIMUM_BYTES=1024
 - **REQUEST_TIMEOUT_SECONDS** is the number of seconds to read a request and to write the response (per each direction, not the total time for both read and write). This prevents consuming a connection with a very slow request/ response, intentionally or otherwise.
 
 - **REQUEST_MAXIMUM_BYTES** is the maximum number of bytes for a client request. This prevents clients from sending a request that consumes too much memory.
-  The Gopher protocol does not define a maxium request size, but modern servers definitely need one. I used 1k (1024) as the default, based on the more modern Gemini protocol's maximum. Setting this to 0, will allow any request size that the server can handle.
+  The Gopher protocol does not define a maxium request size, but modern servers definitely need one. I used 1k (1024) as the default, based on the more modern Gemini protocol's maximum.
 
 ### Firewall
 
