@@ -215,11 +215,6 @@ func readDirFiltered(dirPath string) ([]fs.DirEntry, error) {
 
 	for _, entry := range entries {
 		fullPath := filepath.Join(dirPath, entry.Name())
-		if err := security.AssertFileSystemAccess(fullPath); err != nil {
-			fmt.Println("REJECT:", fullPath, "ERR:", err)
-		} else {
-			fmt.Println("ALLOW:", fullPath)
-		}
 		if err := security.AssertFileSystemAccess(fullPath); err == nil {
 			filtered = append(filtered, entry)
 		}

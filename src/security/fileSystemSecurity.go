@@ -10,36 +10,33 @@ import (
 	"regexp"
 )
 
-type FileAccessConfig struct {
+type fileAccessConfig struct {
 	Enabled       bool     `json:"enabled"`
 	ExcludedPaths []string `json:"excludedPaths"`
 }
 
 var cfg = configuration.GetConfiguration()
-var fileAccessConfig FileAccessConfig
+var accessConfig fileAccessConfig
 var compiled []*regexp.Regexp
 
 func init() {
-	err := loadConfig(cfg.FireWallConfigFile)
+	err := loadConfig(cfg.FileAccessConfigFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 func loadConfig(path string) error {
-	if compiled != nil {
-		return nil
-	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	if err := json.Unmarshal(data, &fileAccessConfig); err != nil {
+	if err := json.Unmarshal(data, &accessConfig); err != nil {
 		return err
 	}
 
-	compiled = make([]*regexp.Regexp, 0, len(fileAccessConfig.ExcludedPaths))
-	for _, pattern := range fileAccessConfig.ExcludedPaths {
+	compiled = make([]*regexp.Regexp, 0, len(accessConfig.ExcludedPaths))
+	for _, pattern := range accessConfig.ExcludedPaths {
 		re, err := regexp.Compile(pattern)
 		if err != nil {
 			return fmt.Errorf("invalid regex %q: %w", pattern, err)
@@ -51,7 +48,7 @@ func loadConfig(path string) error {
 }
 
 func AssertFileSystemAccess(path string) error {
-	if !fileAccessConfig.Enabled {
+	if !accessConfig.Enabled {
 		return nil
 	}
 
@@ -73,10 +70,10 @@ func AssertFileSystemAccess(path string) error {
 		if parent == dir {
 			break
 		}
-		base := filepath.Base(dir)
 
-		if isExcluded(base) {
-			return fmt.Errorf("disallowed directory in path: %s", base)
+		dbase := filepath.Base(dir)
+		if isExcluded(dbase) {
+			return fmt.Errorf("disallowed directory in path: %s", dbase)
 		}
 
 		dir = parent
