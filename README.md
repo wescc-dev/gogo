@@ -45,6 +45,7 @@ PORT=70
 GOPHER_ROOT=gopher-root
 FIREWALL_CONFIG_FILE=firewall-config.json
 REQUEST_TIMEOUT_SECONDS=30
+REQUEST_MAXIMUM_BYTES=1024
 ```
 
 - **TITLE** is the name of your gopher hole. It is only displayed in the gophermap generated from the .gophermap in the GOPHER_ROOT directory.
@@ -54,6 +55,8 @@ REQUEST_TIMEOUT_SECONDS=30
 - **HOST_BIND_IP** is the IP address that the server listens for client requests.
   It may or may not correspond to HOSTNAME. For example, if running in a Docker container, the HOSTNAME may resolve to the host's IP address while GoGopher is listening on a Docker network address. (Inside a container, 0.0.0.0 is the simplest).
 
+- **PORT** is the port the server listens on.
+
 - **GOPHER_ROOT** is the root directory of the documents you want to provide through Gopher. **Anything in this directory hierarchy is intended to be accessed by the public in clear text.** 
   The one exception is that GoGopher will **not** serve any files or directories beginning with a period (.) 
   So, for example, *gopher-root/public/.private.text* will **not** be served.
@@ -61,6 +64,9 @@ REQUEST_TIMEOUT_SECONDS=30
 - **FIREWALL_CONFIG_FILE** is the file containing the firewall rules, which control what IP addresses are allowed to connect to your GoGopher server. (See below.)
 
 - **REQUEST_TIMEOUT_SECONDS** is the number of seconds to read a request and to write the response (per each direction, not the total time for both read and write). This prevents consuming a connection with a very slow request/ response, intentionally or otherwise.
+
+- **REQUEST_MAXIMUM_BYTES** is the maximum number of bytes for a client request. This prevents clients from sending a request that consumes too much memory.
+  The Gopher protocol does not define a maxium request size, but modern servers definitely need one. I used 1k (1024) as the default, based on the more modern Gemini protocol's maximum. Setting this to 0, will allow any request size that the server can handle.
 
 ### Firewall
 
@@ -110,7 +116,7 @@ serve a dynamically generated gophermap if there isn't a file named *gophermap* 
 **If neither *.gophermap* nor *gophermap* is found, the directory's contents are served.**
 
 | Gophermap File      | Content sent to Client                                              |
-|---------------------|---------------------------------------------------------------------|
+| ------------------- | ------------------------------------------------------------------- |
 | gophermap           | The contents of the file                                            |
 | .gophermap          | A dynamically generated gophermap from the template .gophermap file |
 | *neither* (default) | The contents of the directory                                       |
@@ -118,7 +124,7 @@ serve a dynamically generated gophermap if there isn't a file named *gophermap* 
 GoGopher generates the gophermap dynamically by substituting *tokens* with the values of variables dynamically.
 
 | Token                   | Value Source                                                                                      |
-|-------------------------|---------------------------------------------------------------------------------------------------|
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
 | {{TITLE}}               | TITLE Environment Variable                                                                        |
 | {{HOST}}                | Host name of the server                                                                           |
 | {{PORT}                 | The port the host is lisenting on (70 by default)                                                 |
