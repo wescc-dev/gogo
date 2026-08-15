@@ -12,7 +12,7 @@ import (
 
 const (
 	AppName   = "Wes C's Go Gopher Server"
-	Version   = "0.1.2"
+	Version   = "0.1.3"
 	Copyright = "Copyright©️ 2026 Wes C"
 	License   = "MIT License"
 	Link      = "https://github.com/wescc-dev/gogopher"
