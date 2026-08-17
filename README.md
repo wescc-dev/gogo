@@ -49,6 +49,8 @@ FIREWALL_CONFIG_FILE=firewall-config.json
 FILE_ACCESS_CONFIG_FILE=file-access-config.json
 REQUEST_TIMEOUT_SECONDS=30
 REQUEST_MAXIMUM_BYTES=1024
+TLS_CERT_FILE=
+TLS_KEY_FILE=
 ```
 
 - **TITLE** is the name of your gopher hole. It is only displayed in the gophermap generated from the .gophermap in the GOPHER_ROOT directory.
@@ -74,6 +76,9 @@ REQUEST_MAXIMUM_BYTES=1024
 
 - **REQUEST_MAXIMUM_BYTES** is the maximum number of bytes for a client request. This prevents clients from sending a request that consumes too much memory.
   The Gopher protocol does not define a maxium request size, but modern servers definitely need one. I used 1k (1024) as the default, based on the more modern Gemini protocol's maximum.
+
+- **TLS_CERT_FILE** and **TLS_KEY_FILE** are optional paths to the server certificate and private key. Set both to enable TLS; leave both empty to use plain TCP.
+
 
 ### Firewall
 
@@ -131,10 +136,11 @@ serve a dynamically generated gophermap if there isn't a file named *gophermap* 
 GoGopher generates the gophermap dynamically by substituting *tokens* with the values of variables dynamically.
 
 | Token                   | Value Source                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------------- |
+|-------------------------|---------------------------------------------------------------------------------------------------|
 | {{TITLE}}               | TITLE Environment Variable                                                                        |
 | {{HOST}}                | Host name of the server                                                                           |
 | {{PORT}                 | The port the host is lisenting on (70 by default)                                                 |
+| {{TLS_ENABLED}}         | Whether or not TLS enabled on the server                                                          |
 | {{CLIENT_IP_ADDRESS}}   | The IP Adress of the connected client                                                             |
 | {{SERVER}}              | Information about the GoGopher server running on the system                                       |
 | {{START_TIME}}          | The date/time the server started                                                                  |
@@ -249,7 +255,6 @@ Operators can modify either the host or container ports.
 ```
 gopher://localhost:7070
 ```
-
 *Note that it was not necessary to change the container port.*
 
 The HOST_BIND_ADDRESS may need to change for your Docker environment. One common gotcha is that it's not listening on 127.0.0.1 in most cases. It's bound to an **internal container IP address**, not a host address (unless you configure the container network settings to do so).
