@@ -13,6 +13,7 @@ i \____|\___/| .__/|_| |_|\___|_|    |_| |_|\___/|_|\___|		error.host	1
 i            |_|		error.host	1
 i{{TITLE}}		error.host	1
 iHost: {{HOST}}		error.host	1
+iSecure: {{TLS_ENABLED}}		error.host	1
 iServer: {{SERVER}}		error.host	1
 iRunning on {{OS}}/{{ARCH}} with {{CPUS}} cores		error.host	1
 i{{=}}		error.host	1

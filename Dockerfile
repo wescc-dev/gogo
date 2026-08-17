@@ -27,6 +27,8 @@ ENV TITLE="Wes C's Gopher Hole" \
     FILE_ACCESS_CONFIG_FILE=file-access-config.json \
     REQUEST_TIMEOUT_SECONDS=30 \
     REQUEST_MAXIMUM_BYTES=1024
+      #- TLS_CERT_FILE=/certs/server.crt
+      #- TLS_KEY_FILE=/certs/server.key
 VOLUME /gopher-root
 EXPOSE 70
 ENTRYPOINT ["/gogopher"]

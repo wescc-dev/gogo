@@ -42,6 +42,8 @@ TITLE="Wes C's Official Gopher Hole"
 HOSTNAME=localhost
 HOST_BIND_IP=0.0.0.0
 PORT=70
+TLS_CERT_FILE=
+TLS_KEY_FILE=
 GOPHER_ROOT=gopher-root
 FIREWALL_CONFIG_FILE=firewall-config.json
 FILE_ACCESS_CONFIG_FILE=file-access-config.json
@@ -57,6 +59,8 @@ REQUEST_MAXIMUM_BYTES=1024
   It may or may not correspond to HOSTNAME. For example, if running in a Docker container, the HOSTNAME may resolve to the host's IP address while GoGopher is listening on a Docker network address. (Inside a container, 0.0.0.0 is the simplest).
 
 - **PORT** is the port the server listens on.
+
+- **TLS_CERT_FILE** and **TLS_KEY_FILE** are optional paths to the server certificate and private key. Set both to enable TLS; leave both empty to use plain TCP.
 
 - **GOPHER_ROOT** is the root directory of the documents you want to provide through Gopher. **Anything in this directory hierarchy is intended to be accessed by the public in clear text.** 
   The one exception is that GoGopher will **not** serve any files or directories beginning with a period (.) 
@@ -179,6 +183,9 @@ services:
 
       - gopher-root:/gopher-root:ro
 
+      # Optional native TLS certificate and private key.
+      #- ./certs:/certs:ro
+
       # Consider binding these config files to host paths for easier updates
       # It is recommended to use read-only mode.
 
@@ -194,6 +201,9 @@ services:
       - FILE_ACCESS_CONFIG_FILE=file-access-config.json
       - REQUEST_TIMEOUT_SECONDS=30
       - REQUEST_MAXIMUM_BYTES=1024
+      # Uncomment both settings and the certificate mount to enable TLS.
+      #- TLS_CERT_FILE=/certs/server.crt
+      #- TLS_KEY_FILE=/certs/server.key
     ports:
       - '70:70'
 volumes:

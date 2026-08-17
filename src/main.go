@@ -36,6 +36,8 @@ func printConfiguration() {
 	log.Println("Host Name:", cfg.HostName)
 	log.Println("Host bind ip:", cfg.BindAddress)
 	log.Println("Port:", cfg.Port)
+	log.Println("TLS certificate:", cfg.TLSCertFile)
+	log.Println("TLS key:", cfg.TLSKeyFile)
 	log.Println("Gopher root:", cfg.GopherRoot)
 	log.Println("Firewall config:", cfg.FireWallConfigFile)
 	log.Println("Request timeout (sec.):", cfg.RequestTimeoutDuration)
@@ -55,7 +57,9 @@ func startServer() core.IServer {
 		cfg.Port,
 		cfg.GopherRoot,
 		cfg.RequestTimeoutDuration,
-		cfg.RequestMaximumBytes)
+		cfg.RequestMaximumBytes,
+		cfg.TLSCertFile,
+		cfg.TLSKeyFile)
 	if svr != nil {
 		middleware.AddRequestId(svr)
 		middleware.AddFirewallMiddleware(svr)

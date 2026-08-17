@@ -10,6 +10,9 @@ services:
 
       - gopher-root:/gopher-root:ro
 
+      # Optional: mount a certificate and private key to enable native TLS.
+      #- ./certs:/certs:ro
+
       # Consider binding these config files to host paths for easier updates
       # It is recommended to use read-only mode.
 
@@ -25,6 +28,9 @@ services:
       - FILE_ACCESS_CONFIG_FILE=file-access-config.json
       - REQUEST_TIMEOUT_SECONDS=30
       - REQUEST_MAXIMUM_BYTES=1024
+      # Enable TLS by setting both values and mounting ./certs above.
+      #- TLS_CERT_FILE=/certs/server.crt
+      #- TLS_KEY_FILE=/certs/server.key
     ports:
       - '70:70'
 volumes:

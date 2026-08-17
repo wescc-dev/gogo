@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"gogopher/src/configuration"
 	"gogopher/src/core"
@@ -33,6 +34,8 @@ type gopherServer struct {
 	RequestTimeoutDuration time.Duration
 	RequestMaximumBytes    int
 	GopherRoot             string
+	TLSCertFile            string
+	TLSKeyFile             string
 
 	startTime        time.Time
 	stopTime         time.Time
@@ -48,29 +51,6 @@ type gopherServer struct {
 	stopRequested   bool
 }
 
-func (s *gopherServer) GetCurrentServerInfo() core.ServerInfoView {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return core.ServerInfoView{
-		Title:                   s.Title,
-		HostName:                s.Hostname,
-		Port:                    s.Port,
-		StartTime:               s.startTime,
-		Uptime:                  time.Now().Sub(s.startTime),
-		TotalConnections:        s.totalConnections,
-		CurrentConnections:      len(s.conns),
-		OS:                      runtime.GOOS,
-		Architecture:            runtime.GOARCH,
-		NumCpus:                 runtime.NumCPU(),
-		GopherRoot:              s.GopherRoot,
-		GophermapTemplateName:   cfg.GophermapTemplateName,
-		ServerSoftwareName:      cfg.Metadata.AppName,
-		ServerSoftwareVersion:   cfg.Metadata.Version,
-		ServerSoftwareCopyright: cfg.Metadata.Copyright,
-		ServerSoftwareLicense:   cfg.Metadata.License,
-	}
-}
-
 func NewServer(
 	Title string,
 	hostname string,
@@ -78,7 +58,9 @@ func NewServer(
 	port string,
 	gopherRoot string,
 	requestTimeoutDuration time.Duration,
-	requestMaximumBytea int) (core.IServer, error) {
+	requestMaximumBytea int,
+	tlsCertFile string,
+	tlsKeyFile string) (core.IServer, error) {
 
 	if strings.TrimSpace(hostname) == "" {
 		hostname = "localhost"
@@ -92,6 +74,9 @@ func NewServer(
 	if strings.TrimSpace(gopherRoot) == "" {
 		return nil, fmt.Errorf("gopherRoot cannot be empty")
 	}
+	if (strings.TrimSpace(tlsCertFile) == "") != (strings.TrimSpace(tlsKeyFile) == "") {
+		return nil, fmt.Errorf("TLS_CERT_FILE and TLS_KEY_FILE must be configured together")
+	}
 
 	return &gopherServer{
 		Title:                  Title,
@@ -99,6 +84,8 @@ func NewServer(
 		BindAddr:               bindAddr,
 		Port:                   port,
 		GopherRoot:             gopherRoot,
+		TLSCertFile:            tlsCertFile,
+		TLSKeyFile:             tlsKeyFile,
 		RequestTimeoutDuration: requestTimeoutDuration,
 		RequestMaximumBytes:    requestMaximumBytea,
 		Middlewares:            []core.Middleware{},
@@ -110,11 +97,25 @@ func NewServer(
 }
 
 func (s *gopherServer) Start() error {
-	ln, err := net.Listen("tcp", s.BindAddr+":"+s.Port)
+	address := s.BindAddr + ":" + s.Port
+	var ln net.Listener
+	var err error
+	if strings.TrimSpace(s.TLSCertFile) != "" {
+		certificate, loadErr := tls.LoadX509KeyPair(s.TLSCertFile, s.TLSKeyFile)
+		if loadErr != nil {
+			return fmt.Errorf("load TLS certificate and key: %w", loadErr)
+		}
+		ln, err = tls.Listen("tcp", address, &tls.Config{Certificates: []tls.Certificate{certificate}, MinVersion: tls.VersionTLS12})
+		if err == nil {
+			log.Println("GoGopher: TLS enabled")
+		}
+	} else {
+		ln, err = net.Listen("tcp", address)
+	}
 	if err != nil {
 		return err
 	}
-	log.Println("GoGopher: listening on ", s.BindAddr+":"+s.Port)
+	log.Println("GoGopher: listening on ", address)
 
 	s.mu.Lock()
 	s.Handler = s.useMiddleware(s.serveSelector)
@@ -179,6 +180,29 @@ func (s *gopherServer) Stop(ctx context.Context) error {
 		s.stopTime = time.Now()
 		s.mu.Unlock()
 		return nil
+	}
+}
+func (s *gopherServer) GetCurrentServerInfo() core.ServerInfoView {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return core.ServerInfoView{
+		Title:                   s.Title,
+		HostName:                s.Hostname,
+		Port:                    s.Port,
+		TLSEnabled:              s.TLSCertFile != "",
+		StartTime:               s.startTime,
+		Uptime:                  time.Now().Sub(s.startTime),
+		TotalConnections:        s.totalConnections,
+		CurrentConnections:      len(s.conns),
+		OS:                      runtime.GOOS,
+		Architecture:            runtime.GOARCH,
+		NumCpus:                 runtime.NumCPU(),
+		GopherRoot:              s.GopherRoot,
+		GophermapTemplateName:   cfg.GophermapTemplateName,
+		ServerSoftwareName:      cfg.Metadata.AppName,
+		ServerSoftwareVersion:   cfg.Metadata.Version,
+		ServerSoftwareCopyright: cfg.Metadata.Copyright,
+		ServerSoftwareLicense:   cfg.Metadata.License,
 	}
 }
 
