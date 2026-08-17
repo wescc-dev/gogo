@@ -10,7 +10,12 @@ var metadataFs embed.FS
 
 var metadata *Metadata
 
-var BuildVersion = "v0.0.1-dev"
+// BuildVersion is set by the build process.
+//
+//	 go build \
+//			-ldflags="-X gogopher/src/configuration.BuildVersion=${VERSION} -extldflags=-static" \
+//			-o gogopher ./src
+var BuildVersion = "XXXXXX"
 
 type Metadata struct {
 	AppName   string `json:"app_name"`
