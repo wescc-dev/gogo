@@ -28,9 +28,9 @@ func main() {
 
 func printConfiguration() {
 	log.Println("---------- GoGopher Server --------")
-	log.Println(configuration.AppName + "(" + configuration.Version + ")")
-	log.Println(configuration.Copyright)
-	log.Println(configuration.Link)
+	log.Println(cfg.Metadata.AppName + "(" + cfg.Metadata.Version + ")")
+	log.Println(cfg.Metadata.Copyright)
+	log.Println(cfg.Metadata.Link)
 	log.Println("---------- Configuration ----------")
 	log.Println("Title:", cfg.Title)
 	log.Println("Host Name:", cfg.HostName)

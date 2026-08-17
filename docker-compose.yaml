@@ -3,6 +3,7 @@ services:
   gogopher:
     image: dbppgpmdtacr/gogopher:latest
     container_name: "gogopher"
+    pull_policy: "always"
     volumes:
       # Mount the gopher root directory read-only.
       # Consider binding a host path for easier updates.
