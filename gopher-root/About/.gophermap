@@ -1,4 +1,4 @@
-i{{SERVER}}	TITLE	error.host	1
+i{{TITLE}}	TITLE	error.host	1
 iHost: {{HOST}}:{{PORT}}		error.host	1
 iServer startup: {{START_TIME}}		error.host	1
 iUptime: {{UPTIME}}		error.host	1

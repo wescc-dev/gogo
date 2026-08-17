@@ -10,33 +10,21 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const (
-	AppName   = "Wes C's Go Gopher Server"
-	Version   = "0.1.3"
-	Copyright = "Copyright©️ 2026 Wes C"
-	License   = "MIT License"
-	Link      = "https://github.com/wescc-dev/gogopher"
-	Footer    = "i                   ------ Go Gopher Server© Wes C. -----\t\terror.host\t1\r\n"
-)
-
 type Configuration struct {
-	Title                   string
-	HostName                string
-	BindAddress             string // In a Docker container, the ip will be different from the host ip
-	Port                    string
-	GopherRoot              string
-	FireWallConfigFile      string
-	FileAccessConfigFile    string
-	ServerSoftwareName      string
-	ServerSoftwareVersion   string
-	ServerSoftwareCopyright string
-	ServerSoftwareLicense   string
-	GophermapTemplateName   string
-	RequestTimeoutDuration  time.Duration
-	RequestMaximumBytes     int
-	OS                      string
-	Architecture            string
-	NumCpus                 int
+	Title                  string
+	HostName               string
+	BindAddress            string // In a Docker container, the ip will be different from the host ip
+	Port                   string
+	GopherRoot             string
+	FireWallConfigFile     string
+	FileAccessConfigFile   string
+	GophermapTemplateName  string
+	RequestTimeoutDuration time.Duration
+	RequestMaximumBytes    int
+	OS                     string
+	Architecture           string
+	NumCpus                int
+	Metadata               *Metadata
 }
 
 var _configuration *Configuration = nil
@@ -60,24 +48,25 @@ func GetConfiguration() *Configuration {
 		} else {
 			requestMaximumBytes = val
 		}
+		m, err := GetMetadata()
+		if err != nil {
+			log.Println("Cannot load metadata:", err)
+		}
 		_configuration = &Configuration{
-			Title:                   getEnv("TITLE", "Wes C's Gopher Hole"),
-			HostName:                getEnv("HOSTNAME", "localhost"),
-			BindAddress:             getEnv("HOST_BIND_IP", "0.0.0.0"),
-			Port:                    getEnv("PORT", "70"),
-			GopherRoot:              getEnv("GOPHER_ROOT", "gopher-root"),
-			FireWallConfigFile:      getEnv("FIREWALL_CONFIG_FILE", "firewall-config.json"),
-			FileAccessConfigFile:    getEnv("FILE_ACCESS_CONFIG_FILE", "file-access-config.json"),
-			GophermapTemplateName:   ".gophermap",
-			ServerSoftwareName:      AppName,
-			ServerSoftwareVersion:   Version,
-			ServerSoftwareCopyright: Copyright,
-			ServerSoftwareLicense:   License,
-			RequestTimeoutDuration:  time.Duration(requestTimeoutSeconds) * time.Second,
-			RequestMaximumBytes:     requestMaximumBytes,
-			OS:                      runtime.GOOS,
-			Architecture:            runtime.GOARCH,
-			NumCpus:                 runtime.NumCPU(),
+			Title:                  getEnv("TITLE", "Wes C's Gopher Hole"),
+			HostName:               getEnv("HOSTNAME", "localhost"),
+			BindAddress:            getEnv("HOST_BIND_IP", "0.0.0.0"),
+			Port:                   getEnv("PORT", "70"),
+			GopherRoot:             getEnv("GOPHER_ROOT", "gopher-root"),
+			FireWallConfigFile:     getEnv("FIREWALL_CONFIG_FILE", "firewall-config.json"),
+			FileAccessConfigFile:   getEnv("FILE_ACCESS_CONFIG_FILE", "file-access-config.json"),
+			GophermapTemplateName:  ".gophermap",
+			RequestTimeoutDuration: time.Duration(requestTimeoutSeconds) * time.Second,
+			RequestMaximumBytes:    requestMaximumBytes,
+			OS:                     runtime.GOOS,
+			Architecture:           runtime.GOARCH,
+			NumCpus:                runtime.NumCPU(),
+			Metadata:               m,
 		}
 	}
 	return _configuration

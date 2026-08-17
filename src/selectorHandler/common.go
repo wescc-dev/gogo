@@ -61,8 +61,9 @@ func writeBannerToConn(conn net.Conn, timeOut time.Duration) error {
 		}
 		return nil
 	}(conn, time.Time{})
+	m, _ := configuration.GetMetadata()
 	conn.SetWriteDeadline(time.Now().Add(timeOut))
-	if _, err := conn.Write([]byte(configuration.Footer)); err != nil {
+	if _, err := conn.Write([]byte(m.AppName)); err != nil {
 		log.Println(err)
 		return err
 	}

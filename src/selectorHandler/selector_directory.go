@@ -160,7 +160,8 @@ func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, svrInfo core
 }
 
 func (d *DirectorySelectorHandler) addFooter(templateContent string) string {
-	templateContent += configuration.Footer
+	m, _ := configuration.GetMetadata()
+	templateContent += m.Footer
 	return templateContent
 }
 

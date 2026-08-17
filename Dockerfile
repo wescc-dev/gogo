@@ -2,12 +2,15 @@ FROM --platform=$BUILDPLATFORM golang:latest AS build
 
 ARG TARGETOS
 ARG TARGETARCH
+ARG VERSION=dev
 
 WORKDIR /app
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -ldflags="-extldflags=-static" -o gogopher ./src
+    go build \
+    -ldflags="-X gogopher/src/configuration.BuildVersion=${VERSION} -extldflags=-static" \
+    -o gogopher ./src
 
 FROM debian:bookworm-slim
 COPY --from=build /app/gogopher gogopher

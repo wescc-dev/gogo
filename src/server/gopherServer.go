@@ -64,10 +64,10 @@ func (s *gopherServer) GetCurrentServerInfo() core.ServerInfoView {
 		NumCpus:                 runtime.NumCPU(),
 		GopherRoot:              s.GopherRoot,
 		GophermapTemplateName:   cfg.GophermapTemplateName,
-		ServerSoftwareName:      cfg.ServerSoftwareName,
-		ServerSoftwareVersion:   cfg.ServerSoftwareVersion,
-		ServerSoftwareCopyright: cfg.ServerSoftwareCopyright,
-		ServerSoftwareLicense:   cfg.ServerSoftwareLicense,
+		ServerSoftwareName:      cfg.Metadata.AppName,
+		ServerSoftwareVersion:   cfg.Metadata.Version,
+		ServerSoftwareCopyright: cfg.Metadata.Copyright,
+		ServerSoftwareLicense:   cfg.Metadata.License,
 	}
 }
 
