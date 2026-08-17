@@ -111,6 +111,7 @@ func (s *gopherServer) Start() error {
 		}
 	} else {
 		ln, err = net.Listen("tcp", address)
+		log.Println("GoGopher: TLS disabled")
 	}
 	if err != nil {
 		return err
