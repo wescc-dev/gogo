@@ -181,12 +181,17 @@ func (d *DirectorySelectorHandler) replaceSingleTokens(conn net.Conn, svrInfo co
 	if err != nil {
 		return content, err
 	}
+	tls := "No"
+	if svrInfo.TLSEnabled {
+		tls = "Yes (TLS certificate is valid)"
+	}
 
 	// Replace simple tokens first
 	tokens := map[string]string{
 		"TITLE":               svrInfo.Title,
 		"HOST":                svrInfo.HostName,
 		"PORT":                svrInfo.Port,
+		"TLS_ENABLED":         fmt.Sprintf("%s", tls),
 		"CLIENT_IP_ADDRESS":   clientIP,
 		"SERVER":              svrInfo.ServerSoftwareName + " (" + svrInfo.ServerSoftwareVersion + ") " + svrInfo.ServerSoftwareLicense,
 		"START_TIME":          svrInfo.StartTime.Format(time.RFC3339),

@@ -15,6 +15,8 @@ type Configuration struct {
 	HostName               string
 	BindAddress            string // In a Docker container, the ip will be different from the host ip
 	Port                   string
+	TLSCertFile            string
+	TLSKeyFile             string
 	GopherRoot             string
 	FireWallConfigFile     string
 	FileAccessConfigFile   string
@@ -57,6 +59,8 @@ func GetConfiguration() *Configuration {
 			HostName:               getEnv("HOSTNAME", "localhost"),
 			BindAddress:            getEnv("HOST_BIND_IP", "0.0.0.0"),
 			Port:                   getEnv("PORT", "70"),
+			TLSCertFile:            getEnv("TLS_CERT_FILE", ""),
+			TLSKeyFile:             getEnv("TLS_KEY_FILE", ""),
 			GopherRoot:             getEnv("GOPHER_ROOT", "gopher-root"),
 			FireWallConfigFile:     getEnv("FIREWALL_CONFIG_FILE", "firewall-config.json"),
 			FileAccessConfigFile:   getEnv("FILE_ACCESS_CONFIG_FILE", "file-access-config.json"),

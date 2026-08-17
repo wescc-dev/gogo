@@ -6,6 +6,7 @@ type ServerInfoView struct {
 	Title                   string
 	HostName                string
 	Port                    string
+	TLSEnabled              bool
 	Uptime                  time.Duration
 	StartTime               time.Time
 	CurrentConnections      int
