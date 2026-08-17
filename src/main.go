@@ -57,6 +57,7 @@ func startServer() core.IServer {
 		cfg.RequestTimeoutDuration,
 		cfg.RequestMaximumBytes)
 	if svr != nil {
+		middleware.AddRequestId(svr)
 		middleware.AddFirewallMiddleware(svr)
 	}
 	if err != nil {
