@@ -10,17 +10,7 @@ import (
 	"time"
 )
 
-type SelectResult struct {
-	Handled bool
-}
-type SelectorFunc func(conn net.Conn, gopherRootDir string, selector string, timeOut time.Duration) (*SelectResult, error)
-
-type ISelectorHandler interface {
-	//Select processes the connection. If it handles the connection, it returns nil.
-	Select(conn net.Conn, gopherRootDir string, selector string, timeOut time.Duration) (*SelectResult, error)
-}
-
-func WriteFileToConn(conn net.Conn, path string, timeout time.Duration) error {
+func writeFileToConn(conn net.Conn, path string, timeout time.Duration) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("cannot open file: %w", err)
@@ -63,13 +53,20 @@ func WriteFileToConn(conn net.Conn, path string, timeout time.Duration) error {
 	return nil
 }
 
-func WriteBannerToConn(conn net.Conn, timeOut time.Duration) {
-	defer conn.SetReadDeadline(time.Time{})
+func writeBannerToConn(conn net.Conn, timeOut time.Duration) error {
+	defer func(conn net.Conn, t time.Time) error {
+		err := conn.SetReadDeadline(t)
+		if err != nil {
+			return err
+		}
+		return nil
+	}(conn, time.Time{})
 	conn.SetWriteDeadline(time.Now().Add(timeOut))
 	if _, err := conn.Write([]byte(configuration.Footer)); err != nil {
 		log.Println(err)
-		return
+		return err
 	}
+	return nil
 }
 
 func writeTerminationMarker(conn net.Conn, timeOut time.Duration) {

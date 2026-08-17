@@ -6,7 +6,6 @@ import (
 	"gogopher/src/security"
 	"log"
 	"net"
-	"time"
 )
 
 var cfg = configuration.GetConfiguration()
@@ -21,14 +20,11 @@ func AddFirewallMiddleware(svr core.IServer) {
 
 var firewallMiddleware core.Middleware = func(next core.HandlerFunc) core.HandlerFunc {
 	return func(
-		conn net.Conn,
-		rootDir string,
-		selector string,
-		timeout time.Duration,
+		ctx *core.RequestContext,
 	) error {
-		log.Println("Request:", conn.RemoteAddr(), selector)
+		log.Println("Request:", ctx.Request.Conn.RemoteAddr(), ctx.Request.Selector)
 		log.Println("Applying firewall rules...")
-		host, _, err := net.SplitHostPort(conn.RemoteAddr().String())
+		host, _, err := net.SplitHostPort(ctx.Request.Conn.RemoteAddr().String())
 		if err != nil {
 			return err
 		}
@@ -39,6 +35,6 @@ var firewallMiddleware core.Middleware = func(next core.HandlerFunc) core.Handle
 		}
 		log.Println("CLIENT ALLOWED BY FIREWALL:", host)
 
-		return next(conn, rootDir, selector, timeout)
+		return next(ctx)
 	}
 }

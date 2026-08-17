@@ -6,9 +6,7 @@ import (
 	"gogopher/src/security"
 	"gogopher/src/utility"
 	"log"
-	"net"
 	"path/filepath"
-	"time"
 )
 
 type FileSelectorHandler struct {
@@ -19,9 +17,9 @@ func NewFileSelectorHandler(svrInfoProvider core.IServerInfoViewProvider) ISelec
 	return &FileSelectorHandler{svrInfoProvider: svrInfoProvider}
 }
 
-func (s *FileSelectorHandler) Select(conn net.Conn, gopherRootDir string, selector string, timeOut time.Duration) (*SelectResult, error) {
+func (s *FileSelectorHandler) Select(ctx *core.RequestContext) (*SelectResult, error) {
 	result := &SelectResult{false}
-	filePath := filepath.Join(gopherRootDir, selector)
+	filePath := filepath.Join(ctx.Request.RootDir, ctx.Request.Selector)
 	// If it's a file
 	if utility.FileExists(filePath) {
 		if err := security.AssertFileSystemAccess(filePath); err != nil {
@@ -29,7 +27,7 @@ func (s *FileSelectorHandler) Select(conn net.Conn, gopherRootDir string, select
 			return nil, err
 		}
 		log.Println("ALLOW:", filePath)
-		if err := WriteFileToConn(conn, filePath, timeOut); err != nil {
+		if err := writeFileToConn(ctx.Request.Conn, filePath, ctx.Request.Timeout); err != nil {
 			return nil, fmt.Errorf("cannot serve file: %w", err)
 		}
 		result.Handled = true

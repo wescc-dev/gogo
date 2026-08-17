@@ -263,28 +263,34 @@ func (s *gopherServer) processRequest(handler core.HandlerFunc, conn net.Conn, g
 	}
 	var selector = strings.TrimSpace(req)
 	log.Println("Selector:", selector)
-	return handler(conn, gopherRoot, selector, s.RequestTimeoutDuration)
+	requestContext := core.NewRequestContext(ctx, &core.Request{
+		Conn:     conn,
+		RootDir:  gopherRoot,
+		Selector: selector,
+		Timeout:  s.RequestTimeoutDuration,
+	})
+	return handler(requestContext)
 }
 
-func (s *gopherServer) serveSelector(conn net.Conn, rootDir string, selector string, timeOut time.Duration) error {
-	clean := filepath.Clean("/" + selector) // force selector to be relative
-	cleanPath := filepath.Join(rootDir, clean)
-	realRoot, _ := filepath.Abs(rootDir)
+func (s *gopherServer) serveSelector(ctx *core.RequestContext) error {
+	clean := filepath.Clean("/" + ctx.Request.Selector) // force selector to be relative
+	cleanPath := filepath.Join(ctx.Request.RootDir, clean)
+	realRoot, _ := filepath.Abs(ctx.Request.RootDir)
 	realPath, _ := filepath.Abs(cleanPath)
 	if !strings.HasPrefix(realPath, realRoot) {
-		if _, err := io.WriteString(conn, "3Access denied.\r\n"); err != nil {
+		if _, err := io.WriteString(ctx.Request.Conn, "3Access denied.\r\n"); err != nil {
 			return fmt.Errorf("cannot write error message: %w", err)
 		}
 		return nil
 	}
 	if err := security.AssertFileSystemAccess(realPath); err != nil {
-		if _, err := io.WriteString(conn, "3Not found.\t\terror.host\t1\r\n"); err != nil {
+		if _, err := io.WriteString(ctx.Request.Conn, "3Not found.\t\terror.host\t1\r\n"); err != nil {
 		}
 		return fmt.Errorf("cannot access file system: %w", err)
 	}
 
 	for _, sh := range s.selectors {
-		res, err := sh.Select(conn, s.GopherRoot, selector, timeOut)
+		res, err := sh.Select(ctx)
 		if err != nil {
 			return fmt.Errorf("cannot select: %w", err)
 		}
@@ -294,7 +300,7 @@ func (s *gopherServer) serveSelector(conn net.Conn, rootDir string, selector str
 	}
 
 	// Not found
-	if _, err := fmt.Fprintf(conn, "3Not found.\r\n.\r\n"); err != nil {
+	if _, err := fmt.Fprintf(ctx.Request.Conn, "3Not found.\r\n.\r\n"); err != nil {
 		return fmt.Errorf("cannot write error message: %w", err)
 	}
 	return fmt.Errorf("file not found: %s", cleanPath)

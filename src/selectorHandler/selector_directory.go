@@ -32,12 +32,12 @@ func NewDirectorySelectorHandler(
 	}
 }
 
-func (d *DirectorySelectorHandler) Select(conn net.Conn, gopherRootDir string, selector string, timeOut time.Duration) (*SelectResult, error) {
+func (d *DirectorySelectorHandler) Select(ctx *core.RequestContext) (*SelectResult, error) {
 	result := &SelectResult{false}
-	selectorPath := filepath.Join(gopherRootDir, selector)
+	selectorPath := filepath.Join(ctx.Request.RootDir, ctx.Request.Selector)
 	// If it's a directory
 	if utility.IsDirectory(selectorPath) {
-		err := d.serveDirectory(conn, selectorPath, selector, timeOut)
+		err := d.serveDirectory(ctx.Request.Conn, selectorPath, ctx.Request.Selector, ctx.Request.Timeout)
 		if err != nil {
 			return nil, fmt.Errorf("cannot serve directory: %w", err)
 		}
@@ -92,7 +92,7 @@ func (d *DirectorySelectorHandler) serveDirectory(conn net.Conn, selectorPath st
 			}
 		}
 	}
-	WriteBannerToConn(conn, timeOut)
+	writeBannerToConn(conn, timeOut)
 	writeTerminationMarker(conn, timeOut)
 	return nil
 }
@@ -106,7 +106,7 @@ func (d *DirectorySelectorHandler) serveGopherMap(conn net.Conn, selectorPath st
 
 	// Gophermap exists then serve it
 	if gopherMapExists {
-		err := WriteFileToConn(conn, gophermapPath, timeOut)
+		err := writeFileToConn(conn, gophermapPath, timeOut)
 		if err != nil {
 			return false, fmt.Errorf("cannot serve gophermap: %w", err)
 		}
