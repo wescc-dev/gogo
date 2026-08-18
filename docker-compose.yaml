@@ -11,7 +11,11 @@ services:
       - gopher-root:/gopher-root:ro
 
       # Optional: mount a certificate and private key to enable native TLS.
-      #- ./certs:/certs:ro
+      # If using TLS, you must also set the TLS_CERT_FILE and TLS_KEY_FILE environment variables.
+      # Is used, Those files should exist in this directory.
+      # Named or mounted volume is recommended so they are not lost when the container is removed.
+      # You can, of course, mount the files instead of using a volume.
+      - certs:/certs:ro
 
       # Consider binding these config files to host paths for easier updates
       # It is recommended to use read-only mode.
@@ -28,10 +32,11 @@ services:
       - FILE_ACCESS_CONFIG_FILE=file-access-config.json
       - REQUEST_TIMEOUT_SECONDS=30
       - REQUEST_MAXIMUM_BYTES=1024
-      # Enable TLS by setting both values and mounting ./certs above.
+      # Enable TLS by setting both values and mounting /certs above.
       #- TLS_CERT_FILE=/certs/server.crt
       #- TLS_KEY_FILE=/certs/server.key
     ports:
       - '70:70'
 volumes:
   gopher-root:
+  certs:
