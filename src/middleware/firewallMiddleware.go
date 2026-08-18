@@ -22,18 +22,13 @@ var firewallMiddleware core.Middleware = func(next core.HandlerFunc) core.Handle
 	return func(
 		ctx *core.RequestContext,
 	) error {
-		log.Println("Request:", ctx.Request.Conn.RemoteAddr(), ctx.Request.Selector)
-		log.Println("Applying firewall rules...")
-		host, _, err := net.SplitHostPort(ctx.Request.Conn.RemoteAddr().String())
-		if err != nil {
-			return err
-		}
-
+		core.ContextLog(ctx, "Applying firewall rules")
+		host, _, _ := net.SplitHostPort(ctx.Request.Conn.RemoteAddr().String())
 		if err := fw.FirewallFilter(host); err != nil {
-			log.Println("CLIENT BLOCKED BY FIREWALL:", host)
+			core.ContextLog(ctx, "CLIENT BLOCKED BY FIREWALL:"+host)
 			return err
 		}
-		log.Println("CLIENT ALLOWED BY FIREWALL:", host)
+		core.ContextLog(ctx, "CLIENT ALLOWED BY FIREWALL:", host)
 
 		return next(ctx)
 	}

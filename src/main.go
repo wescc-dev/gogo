@@ -82,8 +82,8 @@ func stopServer(svr core.IServer) error {
 		log.Println(err)
 	}
 
-	log.Println("Shutdown complete.")
-	log.Println("Server up time:", utility.FormatDuration(svr.GetCurrentServerInfo().Uptime))
+	core.SystemLog("Shutdown complete.")
+	core.SystemLog("Server up time:", utility.FormatDuration(svr.GetCurrentServerInfo().Uptime))
 	return err
 }
 

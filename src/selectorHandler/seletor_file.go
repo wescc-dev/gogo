@@ -5,7 +5,6 @@ import (
 	"gogopher/src/core"
 	"gogopher/src/security"
 	"gogopher/src/utility"
-	"log"
 	"path/filepath"
 )
 
@@ -23,10 +22,10 @@ func (s *FileSelectorHandler) Select(ctx *core.RequestContext) (*SelectResult, e
 	// If it's a file
 	if utility.FileExists(filePath) {
 		if err := security.AssertFileSystemAccess(filePath); err != nil {
-			log.Println("REJECT:", filePath, "ERR:", err)
+			core.ContextLog(ctx, "Access denied for file:", filePath)
 			return nil, err
 		}
-		log.Println("ALLOW:", filePath)
+		core.ContextLog(ctx, "Serving file:", filePath)
 		if err := writeFileToConn(ctx.Request.Conn, filePath, ctx.Request.Timeout); err != nil {
 			return nil, fmt.Errorf("cannot serve file: %w", err)
 		}
