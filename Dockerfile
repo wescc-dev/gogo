@@ -30,5 +30,6 @@ ENV TITLE="Wes C's Gopher Hole" \
       #- TLS_CERT_FILE=/certs/server.crt
       #- TLS_KEY_FILE=/certs/server.key
 VOLUME /gopher-root
+VOLUME /certs
 EXPOSE 70
 ENTRYPOINT ["/gogopher"]

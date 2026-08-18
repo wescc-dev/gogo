@@ -60,7 +60,7 @@ func (d *DirectorySelectorHandler) serveDirectory(conn net.Conn, selectorPath st
 	}
 
 	// Otherwise list directory
-	entries, err := os.ReadDir(selectorPath)
+	entries, err := readDirFiltered(selectorPath)
 	svrInfo := d.svrInfoViewProvider.GetCurrentServerInfo()
 	if err != nil {
 		if _, eerr := fmt.Fprintf(conn,
@@ -92,7 +92,10 @@ func (d *DirectorySelectorHandler) serveDirectory(conn net.Conn, selectorPath st
 			}
 		}
 	}
-	writeBannerToConn(conn, timeOut)
+	err = writeBannerToConn(conn, timeOut)
+	if err != nil {
+		return err
+	}
 	writeTerminationMarker(conn, timeOut)
 	return nil
 }

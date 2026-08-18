@@ -298,16 +298,19 @@ func (s *gopherServer) processRequest(handler core.HandlerFunc, conn net.Conn, g
 }
 
 func (s *gopherServer) serveSelector(ctx *core.RequestContext) error {
-	clean := filepath.Clean("/" + ctx.Request.Selector) // force selector to be relative
-	cleanPath := filepath.Join(ctx.Request.RootDir, clean)
-	realRoot, _ := filepath.Abs(ctx.Request.RootDir)
-	realPath, _ := filepath.Abs(cleanPath)
-	if !strings.HasPrefix(realPath, realRoot) {
+	cleanSelector, realPath, err := resolveSelectorPath(ctx.Request.RootDir, ctx.Request.Selector)
+	if err != nil {
 		if _, err := io.WriteString(ctx.Request.Conn, "3Access denied.\r\n"); err != nil {
 			return fmt.Errorf("cannot write error message: %w", err)
 		}
 		return nil
 	}
+
+	// Handlers use the normalized relative selector that passed validation.
+	// RootDir remains in its configured form so it cannot leak into selectors
+	// generated for clients. Lexical validation intentionally permits symlinks.
+	ctx.Request.Selector = cleanSelector
+
 	if err := security.AssertFileSystemAccess(realPath); err != nil {
 		if _, err := io.WriteString(ctx.Request.Conn, "3Not found.\t\terror.host\t1\r\n"); err != nil {
 		}
@@ -328,5 +331,23 @@ func (s *gopherServer) serveSelector(ctx *core.RequestContext) error {
 	if _, err := fmt.Fprintf(ctx.Request.Conn, "3Not found.\r\n.\r\n"); err != nil {
 		return fmt.Errorf("cannot write error message: %w", err)
 	}
-	return fmt.Errorf("file not found: %s", cleanPath)
+	return fmt.Errorf("file not found: %s", realPath)
+}
+
+func resolveSelectorPath(rootDir string, selector string) (string, string, error) {
+	realRoot, err := filepath.Abs(rootDir)
+	if err != nil {
+		return "", "", err
+	}
+
+	// A leading slash is conventional for Gopher selectors; it does not mean
+	// the host filesystem root.
+	cleanSelector := filepath.Clean(filepath.FromSlash(strings.TrimLeft(selector, "/")))
+	realPath := filepath.Join(realRoot, cleanSelector)
+	rel, err := filepath.Rel(realRoot, realPath)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", "", fmt.Errorf("selector escapes gopher root")
+	}
+
+	return rel, realPath, nil
 }
