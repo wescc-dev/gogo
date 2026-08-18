@@ -2,13 +2,23 @@
 
 An effective Gopher server written in Go by Wes C.
 
+## Features
+- Supports TLS
+- Supports firewall
+- Supports file access rules
+- Supports configurable timeouts and maximum request size
+- Supports gophermaps
+- Supports dynamic gophermaps from templates
+- Supports IPv4 and IPv6
+- Supports Docker (optional) linux/amd64 and linux/arm64 images available on Docker Hub
+
 ## LICENSE
 
 GoGopher is provided under the MIT License. See the [LICENSE](LICENSE) file including in this repository. 
 
 ## Build and Run from Source
 
-***You can skip to the Docker section below if you don't want to build from source.***
+***Skip to the Docker section below if you don't want to build from source.***
 
 The source code for GoGopher is available at:
 
@@ -78,7 +88,6 @@ TLS_KEY_FILE=
   The Gopher protocol does not define a maxium request size, but modern servers definitely need one. I used 1k (1024) as the default, based on the more modern Gemini protocol's maximum.
 
 - **TLS_CERT_FILE** and **TLS_KEY_FILE** are optional paths to the server certificate and private key. Set both to enable TLS; leave both empty to use plain TCP.
-
 
 ### Firewall
 
