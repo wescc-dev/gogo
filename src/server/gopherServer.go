@@ -10,7 +10,6 @@ import (
 	"gogopher/src/security"
 	"gogopher/src/selectorHandler"
 	"io"
-	"log"
 	"net"
 	"path/filepath"
 	"runtime"
@@ -107,16 +106,16 @@ func (s *gopherServer) Start() error {
 		}
 		ln, err = tls.Listen("tcp", address, &tls.Config{Certificates: []tls.Certificate{certificate}, MinVersion: tls.VersionTLS12})
 		if err == nil {
-			log.Println("GoGopher: TLS enabled")
+			core.SystemLog("TLS ENABLED: ", s.TLSCertFile, " ", s.TLSKeyFile, "")
 		}
 	} else {
 		ln, err = net.Listen("tcp", address)
-		log.Println("GoGopher: TLS disabled")
+		core.SystemLog("TLS DISABLED")
 	}
 	if err != nil {
 		return err
 	}
-	log.Println("GoGopher: listening on ", address)
+	core.SystemLog("GoGopher: listening on ", address)
 
 	s.mu.Lock()
 	s.Handler = s.useMiddleware(s.serveSelector)
@@ -144,7 +143,7 @@ func (s *gopherServer) IsStarted() bool {
 
 func (s *gopherServer) Stop(ctx context.Context) error {
 	s.stopOnce.Do(func() {
-		log.Println("Shutting down server...")
+		core.SystemLog("Shutting down server...")
 		s.mu.Lock()
 		ln := s.listener
 		s.stopRequested = true
@@ -213,14 +212,13 @@ func (s *gopherServer) acceptLoop() {
 		conn, err := s.listener.Accept()
 		if err != nil {
 			if s.stopRequested {
-				log.Println("Server stopped")
+				core.SystemLog("Server stopped.")
 			} else {
-				log.Println("Error accepting connection:", err)
+				core.SystemLog("Error accepting connection:", err)
 			}
 			return
 		}
 		s.clientWaitGroup.Add(1)
-		s.trackConn(conn)
 		go s.handleClientConnection(conn, s.Handler)
 	}
 }
@@ -231,7 +229,8 @@ func (s *gopherServer) trackConn(c net.Conn) {
 	s.conns[c] = struct{}{}
 	var cons = len(s.conns)
 	s.totalConnections += cons
-	log.Println("New connection:", c.RemoteAddr(), "total:", cons)
+	host, _, _ := net.SplitHostPort(c.RemoteAddr().String())
+	core.SystemLog("New connection:", host, "total:", cons)
 
 }
 
@@ -240,7 +239,7 @@ func (s *gopherServer) untrackConn(c net.Conn) {
 	defer s.mu.Unlock()
 	delete(s.conns, c)
 	var cons = len(s.conns)
-	log.Println("Connection closed:", c.RemoteAddr(), "remaining:", cons)
+	core.SystemLog("Connection closed:", c.RemoteAddr(), "remaining:", cons)
 }
 
 func (s *gopherServer) useMiddleware(h core.HandlerFunc) core.HandlerFunc {
@@ -251,23 +250,29 @@ func (s *gopherServer) useMiddleware(h core.HandlerFunc) core.HandlerFunc {
 }
 
 func (s *gopherServer) handleClientConnection(conn net.Conn, handler core.HandlerFunc) {
+	s.trackConn(conn)
 	defer s.clientWaitGroup.Done()
 	defer s.untrackConn(conn)
 	defer func(conn net.Conn) {
 		err := conn.Close()
 		if err != nil {
-			log.Println("Error closing connection:", err)
+			core.SystemLog("Error closing connection:", err)
 		}
 	}(conn)
 	if err := s.processRequest(handler, conn, s.GopherRoot); err != nil {
-		log.Println("Error handling request:", err)
+		core.SystemLog("Error handling request:", err)
 	}
-	log.Println("Request processed:", conn.RemoteAddr())
+	core.SystemLog("Request processed:", conn.RemoteAddr())
 }
 
 func (s *gopherServer) processRequest(handler core.HandlerFunc, conn net.Conn, gopherRoot string) error {
 	if s.RequestTimeoutDuration > 0 {
 		_ = conn.SetReadDeadline(time.Now().Add(s.RequestTimeoutDuration))
+	}
+	maxBytes := int64(s.RequestMaximumBytes)
+	selector, err := s.readSelector(conn, maxBytes, s.RequestTimeoutDuration)
+	if err != nil {
+		return err
 	}
 	ctx := context.Background()
 	if s.RequestTimeoutDuration > 0 {
@@ -277,17 +282,6 @@ func (s *gopherServer) processRequest(handler core.HandlerFunc, conn net.Conn, g
 		// Apply the timeout to the connection
 		_ = conn.SetReadDeadline(time.Now().Add(s.RequestTimeoutDuration))
 	}
-
-	reader := bufio.NewReader(io.LimitReader(conn, int64(s.RequestMaximumBytes)))
-	req, err := reader.ReadString('\n')
-	if err != nil {
-		if err == io.EOF {
-			return fmt.Errorf("request size exceeded maximum %d bytes", s.RequestMaximumBytes)
-		}
-		return fmt.Errorf("cannot read request: %w", err)
-	}
-	var selector = strings.TrimSpace(req)
-	log.Println("Selector:", selector)
 	requestContext := core.NewRequestContext(ctx, &core.Request{
 		Conn:     conn,
 		RootDir:  gopherRoot,
@@ -297,30 +291,44 @@ func (s *gopherServer) processRequest(handler core.HandlerFunc, conn net.Conn, g
 	return handler(requestContext)
 }
 
+func (s *gopherServer) readSelector(conn net.Conn, maxBytes int64, timeOut time.Duration) (string, error) {
+	reader := bufio.NewReader(io.LimitReader(conn, maxBytes))
+	req, err := reader.ReadString('\n')
+	if err != nil {
+		if err == io.EOF {
+			_ = selectorHandler.WriteErrorToConn(conn, timeOut, "Access denied")
+
+			return "", fmt.Errorf("request size exceeded maximum %d bytes", maxBytes)
+		}
+		return "", fmt.Errorf("cannot read request: %w", err)
+	}
+	var selector = strings.TrimSpace(req)
+	return selector, nil
+}
+
 func (s *gopherServer) serveSelector(ctx *core.RequestContext) error {
+
 	cleanSelector, realPath, err := resolveSelectorPath(ctx.Request.RootDir, ctx.Request.Selector)
 	if err != nil {
-		if _, err := io.WriteString(ctx.Request.Conn, "3Access denied.\r\n"); err != nil {
-			return fmt.Errorf("cannot write error message: %w", err)
-		}
-		return nil
+		_ = selectorHandler.WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Access denied")
+		return fmt.Errorf("cannot write error message: %w", err)
 	}
 
 	// Handlers use the normalized relative selector that passed validation.
 	// RootDir remains in its configured form so it cannot leak into selectors
 	// generated for clients. Lexical validation intentionally permits symlinks.
 	ctx.Request.Selector = cleanSelector
+	core.ContextLog(ctx, "Serving selector:", ctx.Request.Selector)
 
 	if err := security.AssertFileSystemAccess(realPath); err != nil {
-		if _, err := io.WriteString(ctx.Request.Conn, "3Not found.\t\terror.host\t1\r\n"); err != nil {
-		}
-		return fmt.Errorf("cannot access file system: %w", err)
+		_ = selectorHandler.WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Not found")
+		return err
 	}
 
 	for _, sh := range s.selectors {
 		res, err := sh.Select(ctx)
 		if err != nil {
-			return fmt.Errorf("cannot select: %w", err)
+			return err
 		}
 		if res.Handled {
 			return nil
@@ -328,9 +336,7 @@ func (s *gopherServer) serveSelector(ctx *core.RequestContext) error {
 	}
 
 	// Not found
-	if _, err := fmt.Fprintf(ctx.Request.Conn, "3Not found.\r\n.\r\n"); err != nil {
-		return fmt.Errorf("cannot write error message: %w", err)
-	}
+	_ = selectorHandler.WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Not found")
 	return fmt.Errorf("file not found: %s", realPath)
 }
 

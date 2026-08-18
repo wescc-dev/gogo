@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"gogopher/src/core"
-	"log"
+	"net"
 	"time"
 )
 
@@ -21,10 +21,10 @@ func requestIdMiddleware(next core.HandlerFunc) core.HandlerFunc {
 		}
 		ctx.Request.RequestId = requestID
 		started := time.Now()
-
-		log.Println("Request started:", requestID)
+		host, _, err := net.SplitHostPort(ctx.Request.Conn.RemoteAddr().String())
+		core.ContextLog(ctx, "Request started: ", host)
 		defer func() {
-			log.Println("Request completed:", requestID, "duration:", time.Since(started), "error:", err)
+			core.ContextLog(ctx, "Request completed:", "duration:", time.Since(started), "Error:", err)
 		}()
 
 		return next(ctx)

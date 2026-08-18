@@ -1,7 +1,9 @@
 package server
 
 import (
+	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -43,5 +45,66 @@ func TestResolveSelectorPath(t *testing.T) {
 				t.Errorf("selector exposed an absolute filesystem path: %q", selector)
 			}
 		})
+	}
+}
+
+func TestResolveSelectorPathWithRelativeRootDoesNotLeakRoot(t *testing.T) {
+	workingDir := t.TempDir()
+	root := filepath.Join(workingDir, "gopher-root")
+	if err := os.Mkdir(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(workingDir)
+
+	selector, resolvedPath, err := resolveSelectorPath("gopher-root", "/Ab")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if selector != "Ab" {
+		t.Errorf("selector = %q, want %q", selector, "Ab")
+	}
+	if filepath.IsAbs(selector) || selector == resolvedPath {
+		t.Errorf("client selector exposed filesystem path %q", selector)
+	}
+	if resolvedPath != filepath.Join(root, "Ab") {
+		t.Errorf("resolved path = %q, want %q", resolvedPath, filepath.Join(root, "Ab"))
+	}
+}
+
+func TestResolveSelectorPathAllowsSymlinkOutsideRoot(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks may require additional privileges on Windows")
+	}
+
+	parent := t.TempDir()
+	root := filepath.Join(parent, "gopher-root")
+	outside := filepath.Join(parent, "outside")
+	if err := os.Mkdir(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(outside, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "external")); err != nil {
+		t.Fatal(err)
+	}
+
+	selector, resolvedPath, err := resolveSelectorPath(root, "external")
+	if err != nil {
+		t.Fatalf("symlink selector was rejected: %v", err)
+	}
+	if selector != "external" {
+		t.Errorf("selector = %q, want %q", selector, "external")
+	}
+	resolvedSymlink, err := filepath.EvalSymlinks(resolvedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	canonicalOutside, err := filepath.EvalSymlinks(outside)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolvedSymlink != canonicalOutside {
+		t.Errorf("symlink resolved to %q, want %q", resolvedSymlink, canonicalOutside)
 	}
 }
