@@ -9,7 +9,6 @@ import (
 	"gogopher/src/security"
 	"gogopher/src/utility"
 	"io/fs"
-	"log"
 	"net"
 	"os"
 	"path"
@@ -24,9 +23,7 @@ type DirectorySelectorHandler struct {
 	svrInfoViewProvider core.IServerInfoViewProvider
 }
 
-func NewDirectorySelectorHandler(
-	svrInfoViewProvider core.IServerInfoViewProvider) ISelectorHandler {
-
+func NewDirectorySelectorHandler(svrInfoViewProvider core.IServerInfoViewProvider) ISelectorHandler {
 	return &DirectorySelectorHandler{
 		svrInfoViewProvider: svrInfoViewProvider,
 	}
@@ -37,7 +34,7 @@ func (d *DirectorySelectorHandler) Select(ctx *core.RequestContext) (*SelectResu
 	selectorPath := filepath.Join(ctx.Request.RootDir, ctx.Request.Selector)
 	// If it's a directory
 	if utility.IsDirectory(selectorPath) {
-		err := d.serveDirectory(ctx.Request.Conn, selectorPath, ctx.Request.Selector, ctx.Request.Timeout)
+		err := d.serveDirectory(ctx, selectorPath, ctx.Request.Selector, ctx.Request.Timeout)
 		if err != nil {
 			return nil, fmt.Errorf("cannot serve directory: %w", err)
 		}
@@ -46,12 +43,12 @@ func (d *DirectorySelectorHandler) Select(ctx *core.RequestContext) (*SelectResu
 	return result, nil
 }
 
-func (d *DirectorySelectorHandler) serveDirectory(conn net.Conn, selectorPath string, selector string, timeOut time.Duration) error {
-	defer func(conn net.Conn, t time.Time) {
-		_ = conn.SetReadDeadline(t)
-	}(conn, time.Time{})
+func (d *DirectorySelectorHandler) serveDirectory(ctx *core.RequestContext, selectorPath string, selector string, timeOut time.Duration) error {
+	defer func(ctx *core.RequestContext, t time.Time) {
+		_ = ctx.Request.Conn.SetReadDeadline(t)
+	}(ctx, time.Time{})
 
-	done, err := d.serveGopherMap(conn, selectorPath, timeOut)
+	done, err := d.serveGopherMap(ctx, selectorPath)
 	if err != nil {
 		return err
 	}
@@ -63,44 +60,43 @@ func (d *DirectorySelectorHandler) serveDirectory(conn net.Conn, selectorPath st
 	entries, err := readDirFiltered(selectorPath)
 	svrInfo := d.svrInfoViewProvider.GetCurrentServerInfo()
 	if err != nil {
-		if _, eerr := fmt.Fprintf(conn,
-			"3Error reading directory\t%s/\t%s\t%s\r\n",
-			selectorPath, svrInfo.HostName, svrInfo.Port); eerr != nil {
-			return fmt.Errorf("cannot write error message: %w", err)
+		err := WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Error reading directory", selectorPath)
+		if err != nil {
+			return err
 		}
 		return fmt.Errorf("cannot read directory: %w", err)
 	}
 	if len(entries) == 0 {
-		emptymsg := buildSelectorWithPictogram("3", "", "Directory is empty", "", svrInfo.HostName, svrInfo.Port)
-		if _, err := conn.Write([]byte(emptymsg)); err != nil {
+		empty := buildSelectorWithPictogram("3", "", "Directory is empty", "", svrInfo.HostName, svrInfo.Port)
+		if _, err := ctx.Request.Conn.Write([]byte(empty)); err != nil {
 			return fmt.Errorf("cannot write error message: %w", err)
 		}
 	} else {
 		sortDirectoryEntries(entries)
 		for _, e := range entries {
 			if gopherEntry, err := buildGopherEntry(e, selector, svrInfo.HostName, svrInfo.Port); err != nil {
-				log.Println(err)
+				core.ContextLog(ctx, err)
 				continue
 			} else {
-				if err = conn.SetWriteDeadline(time.Now().Add(timeOut)); err != nil {
+				if err = ctx.Request.Conn.SetWriteDeadline(time.Now().Add(timeOut)); err != nil {
 					return err
 				}
-				if _, err := conn.Write([]byte(gopherEntry)); err != nil {
-					log.Println(err)
+				if _, err := ctx.Request.Conn.Write([]byte(gopherEntry)); err != nil {
+					core.ContextLog(ctx, err)
 					return err
 				}
 			}
 		}
 	}
-	err = writeBannerToConn(conn, timeOut)
+	err = writeBannerToConn(ctx.Request.Conn, timeOut)
 	if err != nil {
 		return err
 	}
-	writeTerminationMarker(conn, timeOut)
+	writeTerminationMarker(ctx.Request.Conn)
 	return nil
 }
 
-func (d *DirectorySelectorHandler) serveGopherMap(conn net.Conn, selectorPath string, timeOut time.Duration) (bool, error) {
+func (d *DirectorySelectorHandler) serveGopherMap(ctx *core.RequestContext, selectorPath string) (bool, error) {
 	svrInfo := d.svrInfoViewProvider.GetCurrentServerInfo()
 	gophermapPath := filepath.Join(selectorPath, "gophermap")
 	gophermapTemplatePath := filepath.Join(selectorPath, svrInfo.GophermapTemplateName)
@@ -109,23 +105,23 @@ func (d *DirectorySelectorHandler) serveGopherMap(conn net.Conn, selectorPath st
 
 	// Gophermap exists then serve it
 	if gopherMapExists {
-		err := writeFileToConn(conn, gophermapPath, timeOut)
+		err := writeFileToConn(ctx.Request.Conn, gophermapPath, ctx.Request.Timeout)
 		if err != nil {
 			return false, fmt.Errorf("cannot serve gophermap: %w", err)
 		}
 		return true, nil
 	} else if gopherMapTemplateExists {
-		err := d.generateGopherMap(conn, svrInfo, selectorPath)
+		err := d.generateGopherMap(ctx, svrInfo, selectorPath)
 		if err != nil {
 			return false, fmt.Errorf("cannot generate gophermap: %w", err)
 		}
-		log.Println("Generated gophermap for:", selectorPath)
+		core.ContextLog(ctx, "Generated gophermap for:", selectorPath)
 		return true, nil
 	}
 	return false, nil
 }
 
-func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, svrInfo core.ServerInfoView, dirPath string) error {
+func (d *DirectorySelectorHandler) generateGopherMap(ctx *core.RequestContext, svrInfo core.ServerInfoView, dirPath string) error {
 	if info, err := os.Stat(svrInfo.GopherRoot); !(err == nil && info.IsDir()) {
 		if err := os.MkdirAll(svrInfo.GopherRoot, os.ModePerm); err != nil {
 			return fmt.Errorf("GopherRoot %s does not exist and could not be created. No files will be served", svrInfo.GopherRoot)
@@ -139,14 +135,14 @@ func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, svrInfo core
 	templateContent := string(templateBytes)
 
 	// Replace Tokens
-	if content, err := d.replaceSingleTokens(conn, svrInfo, templateContent); err != nil {
+	if content, err := d.replaceSingleTokens(ctx.Request.Conn, svrInfo, templateContent); err != nil {
 		return fmt.Errorf("cannot replace tokens: %w", err)
 	} else {
 		templateContent = content
 	}
 
 	// Replace {{ENTRIES}} with directory entries
-	if content, err := d.replaceDirectoryEntriesToken(dirPath, templateContent); err != nil {
+	if content, err := d.replaceDirectoryEntriesToken(ctx, dirPath, templateContent); err != nil {
 		return fmt.Errorf("cannot replace directory entries token: %w", err)
 	} else {
 		templateContent = content
@@ -156,7 +152,7 @@ func (d *DirectorySelectorHandler) generateGopherMap(conn net.Conn, svrInfo core
 	templateContent = d.addFooter(templateContent)
 
 	// Write the gophermap
-	if _, err := conn.Write([]byte(templateContent)); err != nil {
+	if _, err := ctx.Request.Conn.Write([]byte(templateContent)); err != nil {
 		return fmt.Errorf("cannot write gophermap: %w", err)
 	}
 	return nil
@@ -168,9 +164,9 @@ func (d *DirectorySelectorHandler) addFooter(templateContent string) string {
 	return templateContent
 }
 
-func (d *DirectorySelectorHandler) replaceDirectoryEntriesToken(dirPath string, content string) (string, error) {
+func (d *DirectorySelectorHandler) replaceDirectoryEntriesToken(ctx *core.RequestContext, dirPath string, content string) (string, error) {
 	// Now handle {{ENTRIES}}
-	entries, err := d.generateEntries(dirPath)
+	entries, err := d.generateEntries(ctx, dirPath)
 	if err != nil {
 		return content, err
 	}
@@ -232,7 +228,7 @@ func readDirFiltered(dirPath string) ([]fs.DirEntry, error) {
 	return filtered, nil
 }
 
-func (d *DirectorySelectorHandler) generateEntries(dirPath string) (string, error) {
+func (d *DirectorySelectorHandler) generateEntries(ctx *core.RequestContext, dirPath string) (string, error) {
 	entries, err := readDirFiltered(dirPath)
 	if err != nil {
 		return "", fmt.Errorf("cannot read gopher root: %w", err)
@@ -243,7 +239,7 @@ func (d *DirectorySelectorHandler) generateEntries(dirPath string) (string, erro
 	svrInfo := d.svrInfoViewProvider.GetCurrentServerInfo()
 	for _, e := range entries {
 		if s, err := buildGopherEntry(e, strings.TrimPrefix(dirPath, svrInfo.GopherRoot), svrInfo.HostName, svrInfo.Port); err != nil {
-			log.Println(err)
+			core.ContextLog(ctx, err)
 			continue
 		} else {
 			_, _ = w.WriteString(s)

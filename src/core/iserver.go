@@ -13,6 +13,7 @@ type Request struct {
 	Selector  string
 	Timeout   time.Duration
 }
+
 type RequestContext struct {
 	context.Context
 	Request *Request
