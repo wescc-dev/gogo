@@ -47,11 +47,11 @@ func (f *Firewall) FirewallFilter(ip string) error {
 		}
 	case ModeWhiteList:
 		if !f.isAllowed(ip) {
-			return fmt.Errorf("access denied. IP:%s; mode:%s", ip, f.Mode)
+			return fmt.Errorf("access denied. IP:%s; mode:%v", ip, f.Mode)
 		}
 	case ModeBlackList:
 		if f.isBlocked(ip) {
-			return fmt.Errorf("access denied. IP:%s; mode:%s", ip, f.Mode)
+			return fmt.Errorf("access denied. IP:%s; mode:%v", ip, f.Mode)
 		}
 
 	}
