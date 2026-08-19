@@ -121,6 +121,7 @@ func (s *gopherServer) Start() error {
 	s.Handler = s.useMiddleware(s.serveSelector)
 	s.selectors = []selectorHandler.ISelectorHandler{
 		selectorHandler.NewDirectorySelectorHandler(s),
+		selectorHandler.NewLuaSelectorHandler(s),
 		selectorHandler.NewFileSelectorHandler(s)}
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})

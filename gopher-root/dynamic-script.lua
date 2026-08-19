@@ -1,0 +1,7 @@
+local server = server_info()
+print("This is a lua script")
+print(server.title)
+print(server.host_name)
+print(server.port)
+print(server.tls_enabled)
+print("\r\n")
