@@ -4,6 +4,8 @@ An effective **Gopher server** written in Go by Wes C.
 - Supports TLS
 - Supports firewall
 - Supports file access rules
+- Supports configurable extension->item type rules, with optional pictograms
+- Supports Lua scripts
 - Supports hidden files and directories available only by direct selector
 - Supports configurable timeouts and maximum request size
 - Supports gophermaps

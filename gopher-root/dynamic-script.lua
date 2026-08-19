@@ -1,4 +1,6 @@
 print("This is an example of lua script sending dynamic content to the client")
+print("\r\n")
+print("Server Context Variables:")
 print(context.Title)
 print(context.HostName)
 print(context.Port)
@@ -8,7 +10,10 @@ print(context.Uptime)
 print(context.OS)
 print(context.Architecture)
 print(context.GopherRoot)
-local filename = context.GopherRoot .. "/$textfile.txt"
+print("\r\n")
+print("Loading example content from $hidden.txt:")
+print("\r\n")
+local filename = context.GopherRoot .. "/$hidden.txt"
 local content, err = read_file(filename)
 assert(content, err)
 print(content)
