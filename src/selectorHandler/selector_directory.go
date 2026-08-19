@@ -281,7 +281,7 @@ func buildSelector(name string, fullSelector string, host string, port string) s
 	case ".png", ".jpg", ".jpeg", ".gif":
 		itemType = "I"
 		pictogram = "🖼️ "
-	case ".txt", ".md", ".log":
+	case ".txt", ".md", ".log", ".lua":
 		itemType = "0"
 		pictogram = "📄 "
 	default:
