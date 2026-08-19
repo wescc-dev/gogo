@@ -56,6 +56,7 @@ TLS_KEY_FILE=
 GOPHER_ROOT=gopher-root
 FIREWALL_CONFIG_FILE=firewall-config.json
 FILE_ACCESS_CONFIG_FILE=file-access-config.json
+ITEM_TYPE_CONFIG_FILE=item-type-config.json
 REQUEST_TIMEOUT_SECONDS=30
 REQUEST_MAXIMUM_BYTES=1024
 TLS_CERT_FILE=
@@ -80,6 +81,8 @@ TLS_KEY_FILE=
 - **FIREWALL_CONFIG_FILE** is the file containing the firewall rules, which control what IP addresses are allowed to connect to your GoGopher server. (See below.)
 
 - **FILE_ACCESS_CONFIG_FILE** is the file containing the rules for allowing or denying access to files in the GOPHER_ROOT directory.
+- 
+- **ITEM_TYPE_CONFIG_FILE** is the file containing the relationships between file extensions and Gopher item types.
 
 - **REQUEST_TIMEOUT_SECONDS** is the number of seconds to read a request and to write the response (per each direction, not the total time for both read and write). This prevents consuming a connection with a very slow request/ response, intentionally or otherwise.
 
@@ -163,14 +166,22 @@ GoGopher generates the gophermap dynamically by substituting *tokens* with the v
 
 There are some examples of .gophermap templates in the *gophermap-templates* directory.
 
-# Hidden Files and Directories
+## Special Files and Directories
+
+### Hidden Files and Directories
+Any file or directory beginning with $ is considered hidden, and will not have selectors generated for it by .gophermap templates or raw directory lists.
 
 Hidden files and directories are available only by direct selectors.
-Any file or directory beginning with $ is considered hidden, and will not have selectors generated for it by .gophermap templates or raw directory lists.
-Users must know and use the direct selector to access hidden files and directories.
 
+*Users must know and use the direct selector to access hidden files and directories.*
 
-# Docker
+### Lua Scripts
+
+Lua scripts are supported for dynamic content. Files with a .lua extension are executed when the directory is accessed.
+The script is passed a server object with context information. 
+Lua's **print** function is used to output the content to the client.
+
+## Docker
 
 GoGopher supports running in a Docker container. 
 
@@ -220,6 +231,7 @@ services:
       - GOPHER_ROOT=/gopher-root
       - FIREWALL_CONFIG_FILE=firewall-config.json
       - FILE_ACCESS_CONFIG_FILE=file-access-config.json
+      - ITEM_TYPE_CONFIG_FILE=item-type-config.json
       - REQUEST_TIMEOUT_SECONDS=30
       - REQUEST_MAXIMUM_BYTES=1024
       # Uncomment both settings and the certificate mount to enable TLS.
@@ -232,7 +244,7 @@ volumes:
 
 ```
 
-#### Setup
+## Setup
 
 Because GoGopher's purpose is to serve documents, it is recommended that operators create a bind mount for the GOPHER_ROOT directory so that documents are more easily managed outside the docker container. It will require Read permissions for directories and files.
 

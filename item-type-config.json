@@ -1,0 +1,64 @@
+{
+  "pictogramsEnabled": false,
+  "defaultItemType": {"itemType":"9", "pictogram":"⚙︎"},
+  "itemsTypes": [
+    {
+      "itemType": "0",
+      "pictogram": "📄",
+      "extensions": [
+        ".txt",
+        ".md",
+        ".log",
+        ".lua"
+      ]
+    },
+    {
+      "itemType": "1",
+      "pictogram": "📁 ",
+      "extensions": [
+        "/"
+      ]
+    },
+    {
+      "itemType": "g",
+      "pictogram": "🏞️",
+      "extensions": [
+        ".gif"
+      ]
+    },
+    {
+      "itemType": "I",
+      "pictogram": "🏞️",
+      "extensions": [
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".bmp",
+        ".tiff",
+        ".webp",
+        ".svg",
+        ".ico"
+      ]
+    },
+    {
+      "itemType": "s",
+      "pictogram": "🎧",
+      "extensions": [
+        ".mp3",
+        ".wav",
+        ".ogg",
+        ".flac",
+        ".aac",
+        ".m4a",
+        ".wma"
+      ]
+    },
+    {
+      "itemType": "h",
+      "pictogram": "🌐",
+      "extensions": [
+        ".html"
+      ]
+    }
+  ]
+}

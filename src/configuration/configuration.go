@@ -20,6 +20,7 @@ type Configuration struct {
 	GopherRoot             string
 	FireWallConfigFile     string
 	FileAccessConfigFile   string
+	ItemTypeConfigFile     string
 	GophermapTemplateName  string
 	RequestTimeoutDuration time.Duration
 	RequestMaximumBytes    int
@@ -64,6 +65,7 @@ func GetConfiguration() *Configuration {
 			GopherRoot:             getEnv("GOPHER_ROOT", "gopher-root"),
 			FireWallConfigFile:     getEnv("FIREWALL_CONFIG_FILE", "firewall-config.json"),
 			FileAccessConfigFile:   getEnv("FILE_ACCESS_CONFIG_FILE", "file-access-config.json"),
+			ItemTypeConfigFile:     getEnv("ITEM_TYPE_CONFIG_FILE", "item-type-config.json"),
 			GophermapTemplateName:  ".gophermap",
 			RequestTimeoutDuration: time.Duration(requestTimeoutSeconds) * time.Second,
 			RequestMaximumBytes:    requestMaximumBytes,

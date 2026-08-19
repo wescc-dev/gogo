@@ -30,6 +30,7 @@ services:
       - GOPHER_ROOT=/gopher-root
       - FIREWALL_CONFIG_FILE=firewall-config.json
       - FILE_ACCESS_CONFIG_FILE=file-access-config.json
+      - ITEM_TYPE_CONFIG_FILE=item-type-config.json
       - REQUEST_TIMEOUT_SECONDS=30
       - REQUEST_MAXIMUM_BYTES=1024
       # Enable TLS by setting both values and mounting /certs above.
