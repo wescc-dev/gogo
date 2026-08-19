@@ -1,7 +1,5 @@
-# GoGopher
-
-An effective Gopher server written in Go by Wes C.
-
+![GoGopher](GoGopher-logo.png)
+An effective **Gopher server** written in Go by Wes C.
 ## Features
 - Supports TLS
 - Supports firewall
