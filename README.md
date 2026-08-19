@@ -163,12 +163,20 @@ GoGopher generates the gophermap dynamically by substituting *tokens* with the v
 
 There are some examples of .gophermap templates in the *gophermap-templates* directory.
 
-# Hidden Files and Directories
+# Special Files and Directories
+
+## Hidden Files and Directories
+Any file or directory beginning with $ is considered hidden, and will not have selectors generated for it by .gophermap templates or raw directory lists.
 
 Hidden files and directories are available only by direct selectors.
-Any file or directory beginning with $ is considered hidden, and will not have selectors generated for it by .gophermap templates or raw directory lists.
-Users must know and use the direct selector to access hidden files and directories.
 
+*Users must know and use the direct selector to access hidden files and directories.*
+
+## Lua Scripts
+
+Lua scripts are supported for dynamic content. Files with a .lua extension are executed when the directory is accessed.
+The script is passed a server object with context information. 
+Lua's **print** function is used to output the content to the client.
 
 # Docker
 
