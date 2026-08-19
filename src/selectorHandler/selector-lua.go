@@ -31,12 +31,9 @@ func (s *LuaSelectorHandler) Select(ctx *core.RequestContext) (*SelectResult, er
 		return &SelectResult{Handled: false}, nil
 	}
 	l := s.initLua(ctx)
-
 	if err := lua.DoFile(l, scriptPath); err != nil {
 		return nil, fmt.Errorf("execute Lua script: %w", err)
 	}
-
-	writeTerminationMarker(ctx.Request.Conn)
 	return &SelectResult{Handled: true}, nil
 }
 
@@ -44,39 +41,10 @@ func (s *LuaSelectorHandler) initLua(ctx *core.RequestContext) *lua.State {
 	l := lua.NewState()
 	lua.OpenLibraries(l)
 	_ = s.redirectLuaPrint(l, ctx.Request.Conn)
-	s.registerServerInfo(l)
 	s.pushStruct(l, s.svrInfoProvider.GetCurrentServerInfo())
-	l.SetGlobal("info")
+	l.SetGlobal("context")
 	s.registerFileReader(l)
 	return l
-}
-
-func (s *LuaSelectorHandler) registerServerInfo(l *lua.State) {
-	l.Register("server_info", func(l *lua.State) int {
-		info := s.svrInfoProvider.GetCurrentServerInfo()
-
-		l.CreateTable(0, 6)
-
-		l.PushUserData(info)
-		l.SetField(-2, "server_context")
-
-		l.PushString(info.Title)
-		l.SetField(-2, "title")
-
-		l.PushString(info.HostName)
-		l.SetField(-2, "host_name")
-
-		l.PushString(info.Port)
-		l.SetField(-2, "port")
-
-		l.PushBoolean(info.TLSEnabled)
-		l.SetField(-2, "tls_enabled")
-
-		l.PushInteger(info.CurrentConnections)
-		l.SetField(-2, "current_connections")
-
-		return 1
-	})
 }
 
 func (s *LuaSelectorHandler) redirectLuaPrint(l *lua.State, w io.Writer) *error {
@@ -117,6 +85,7 @@ func (s *LuaSelectorHandler) redirectLuaPrint(l *lua.State, w io.Writer) *error 
 
 	return &writeErr
 }
+
 func (s *LuaSelectorHandler) registerFileReader(l *lua.State) {
 	l.Register("read_file", func(l *lua.State) int {
 		filename := lua.CheckString(l, 1)
@@ -132,6 +101,7 @@ func (s *LuaSelectorHandler) registerFileReader(l *lua.State) {
 		return 1
 	})
 }
+
 func (s *LuaSelectorHandler) pushStruct(l *lua.State, value any) {
 	v := reflect.ValueOf(value)
 	if v.Kind() == reflect.Pointer {
