@@ -10,13 +10,13 @@ import (
 )
 
 func WriteErrorToConn(conn net.Conn, timeOut time.Duration, errMessage string, v ...any) error {
+	msg := fmt.Sprint(append([]any{errMessage}, v...)...)
 	if timeOut > 0 {
 		defer func() {
 			_ = conn.SetWriteDeadline(time.Time{})
 		}()
 		_ = conn.SetWriteDeadline(time.Now().Add(timeOut))
 	}
-	msg := fmt.Sprint(append([]any{errMessage}, v...)...)
 	_, err := conn.Write([]byte("3" + msg + ".\t\terror.host\t1\n"))
 	writeTerminationMarker(conn)
 	return err
