@@ -263,11 +263,14 @@ func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) 
 	if name == "gophermap" {
 		return "", nil
 	}
+
 	// Always use path.Join for gopher selectors
 	fullSelector := path.Join("/"+selector, name)
+
 	// Directories
+	itemType, pictogram := getGopherItemTypeByExtension("/")
 	if e.IsDir() {
-		return buildSelectorWithPictogram("1", "📁 ", name, fullSelector, host, port), nil
+		return buildSelectorWithPictogram(itemType, pictogram+" ", name, fullSelector, host, port), nil
 	}
 
 	return buildSelector(name, fullSelector, host, port), nil
@@ -275,20 +278,13 @@ func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) 
 
 func buildSelector(name string, fullSelector string, host string, port string) string {
 	ext := strings.ToLower(filepath.Ext(name))
-	var itemType string
-	var pictogram string
-	switch ext {
-	case ".png", ".jpg", ".jpeg", ".gif":
-		itemType = "I"
-		pictogram = "🖼️ "
-	case ".txt", ".md", ".log", ".lua":
-		itemType = "0"
-		pictogram = "📄 "
-	default:
-		itemType = "9"
-		pictogram = "⚙︎ "
-	}
-	return buildSelectorWithPictogram(itemType, pictogram, name, fullSelector, host, port)
+	itemType, pictogram := getGopherItemTypeByExtension(ext)
+	return buildSelectorWithPictogram(itemType, pictogram+" ", name, fullSelector, host, port)
+}
+
+func getGopherItemTypeByExtension(ext string) (string, string) {
+	itemType, pictogram := core.GetItemTypeByExtension(ext)
+	return itemType, pictogram
 }
 
 func buildSelectorWithPictogram(itemType string, pictogram string, name string, fullSelector string, host string, port string) string {

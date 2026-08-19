@@ -56,6 +56,7 @@ TLS_KEY_FILE=
 GOPHER_ROOT=gopher-root
 FIREWALL_CONFIG_FILE=firewall-config.json
 FILE_ACCESS_CONFIG_FILE=file-access-config.json
+ITEM_TYPE_CONFIG_FILE=item-type-config.json
 REQUEST_TIMEOUT_SECONDS=30
 REQUEST_MAXIMUM_BYTES=1024
 TLS_CERT_FILE=
@@ -80,6 +81,8 @@ TLS_KEY_FILE=
 - **FIREWALL_CONFIG_FILE** is the file containing the firewall rules, which control what IP addresses are allowed to connect to your GoGopher server. (See below.)
 
 - **FILE_ACCESS_CONFIG_FILE** is the file containing the rules for allowing or denying access to files in the GOPHER_ROOT directory.
+- 
+- **ITEM_TYPE_CONFIG_FILE** is the file containing the relationships between file extensions and Gopher item types.
 
 - **REQUEST_TIMEOUT_SECONDS** is the number of seconds to read a request and to write the response (per each direction, not the total time for both read and write). This prevents consuming a connection with a very slow request/ response, intentionally or otherwise.
 
@@ -228,6 +231,7 @@ services:
       - GOPHER_ROOT=/gopher-root
       - FIREWALL_CONFIG_FILE=firewall-config.json
       - FILE_ACCESS_CONFIG_FILE=file-access-config.json
+      - ITEM_TYPE_CONFIG_FILE=item-type-config.json
       - REQUEST_TIMEOUT_SECONDS=30
       - REQUEST_MAXIMUM_BYTES=1024
       # Uncomment both settings and the certificate mount to enable TLS.
