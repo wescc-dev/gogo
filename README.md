@@ -4,6 +4,7 @@ An effective **Gopher server** written in Go by Wes C.
 - Supports TLS
 - Supports firewall
 - Supports file access rules
+- Supports hidden files and directories available only by direct selector
 - Supports configurable timeouts and maximum request size
 - Supports gophermaps
 - Supports dynamic gophermaps from templates
@@ -161,6 +162,13 @@ GoGopher generates the gophermap dynamically by substituting *tokens* with the v
 | {{=}}, {{-}}, {{*}}     | A decorative line of =, *, or - characters, primarily for dividers.                               |
 
 There are some examples of .gophermap templates in the *gophermap-templates* directory.
+
+# Hidden Files and Directories
+
+Hidden files and directories are available only by direct selectors.
+Any file or directory beginning with $ is considered hidden, and will not have selectors generated for it by .gophermap templates or raw directory lists.
+Users must know and use the direct selector to access hidden files and directories.
+
 
 # Docker
 
