@@ -255,6 +255,10 @@ func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) 
 	if strings.HasPrefix(name, ".") {
 		return "", nil
 	}
+	// Skip secret files and directories
+	if strings.HasPrefix(name, "$") {
+		return "", nil
+	}
 	// Skip gophermap files
 	if name == "gophermap" {
 		return "", nil

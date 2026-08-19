@@ -30,28 +30,15 @@ func writeFileToConn(conn net.Conn, path string, timeout time.Duration) error {
 	defer func(f *os.File) {
 		_ = f.Close()
 	}(f)
-
-	buf := make([]byte, 4*1024) // 4 KB chunks
-	for {
-		// Read next chunk
-		n, err := f.Read(buf)
-		if n > 0 {
-			// Apply timeout for each write operation
-			_ = conn.SetWriteDeadline(time.Now().Add(timeout))
-			if _, err := conn.Write(buf[:n]); err != nil {
-				_ = conn.SetWriteDeadline(time.Time{})
-				return fmt.Errorf("cannot write file: %w", err)
-			}
-			// Clear deadline after successful write operation
+	if timeout > 0 {
+		_ = conn.SetWriteDeadline(time.Now().Add(timeout))
+		defer func(conn net.Conn) {
 			_ = conn.SetWriteDeadline(time.Time{})
-		}
-
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("cannot read file: %w", err)
-		}
+		}(conn)
+	}
+	_, err = io.Copy(conn, f)
+	if err != nil {
+		return err
 	}
 	writeTerminationMarker(conn)
 	return nil
