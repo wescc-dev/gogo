@@ -1,4 +1,4 @@
-![GoGopher](gogo-logo-1220x352.png)
+![GoGo](gogo-logo-1220x352.png)
 
 An effective **Gopher server** written in Go by Wes C.
 
@@ -17,13 +17,13 @@ An effective **Gopher server** written in Go by Wes C.
 
 ## LICENSE
 
-GoGopher is provided under the MIT License. See the [LICENSE](LICENSE) file including in this repository. 
+GoGo is provided under the MIT License. See the [LICENSE](LICENSE) file including in this repository. 
 
 ## Build and Run from Source
 
 ***Skip to the Docker section below if you don't want to build from source.***
 
-The source code for GoGopher is available at:
+The source code for GoGo is available at:
 
 ```
 https://github.com/wescc-dev/gogo
@@ -48,7 +48,7 @@ Configure environment variables and firewall.
 
 ### Environment Variables
 
-Reasonable default environment variables are in the .env file. You can edit this file or export environment variables in the shell used to run GoGopher. EXPORTED environments, including those you set in your IDE or Docker container, will take precedent over the .env file.
+Reasonable default environment variables are in the .env file. You can edit this file or export environment variables in the shell used to run GoGo. EXPORTED environments, including those you set in your IDE or Docker container, will take precedent over the .env file.
 
 ```
 TITLE="Wes C's Official Gopher Hole"
@@ -72,17 +72,17 @@ TLS_KEY_FILE=
 - **HOSTNAME** is the host name clients use to connect to your server (e.g. *gopher://HOSTNAME.com*). It is used to create the selectors.
 
 - **HOST_BIND_IP** is the IP address that the server listens for client requests.
-  It may or may not correspond to HOSTNAME. For example, if running in a Docker container, the HOSTNAME may resolve to the host's IP address while GoGopher is listening on a Docker network address. (Inside a container, 0.0.0.0 is the simplest).
+  It may or may not correspond to HOSTNAME. For example, if running in a Docker container, the HOSTNAME may resolve to the host's IP address while GoGo is listening on a Docker network address. (Inside a container, 0.0.0.0 is the simplest).
 
 - **PORT** is the port the server listens on.
 
 - **TLS_CERT_FILE** and **TLS_KEY_FILE** are optional paths to the server certificate and private key. Set both to enable TLS; leave both empty to use plain TCP.
 
 - **GOPHER_ROOT** is the root directory of the documents you want to provide through Gopher. **Anything in this directory hierarchy is intended to be accessed by the public in clear text.** 
-  The one exception is that GoGopher will **not** serve any files or directories beginning with a period (.) 
+  The one exception is that GoGo will **not** serve any files or directories beginning with a period (.) 
   So, for example, *gopher-root/public/.private.text* will **not** be served.
 
-- **FIREWALL_CONFIG_FILE** is the file containing the firewall rules, which control what IP addresses are allowed to connect to your GoGopher server. (See below.)
+- **FIREWALL_CONFIG_FILE** is the file containing the firewall rules, which control what IP addresses are allowed to connect to your GoGo server. (See below.)
 
 - **FILE_ACCESS_CONFIG_FILE** is the file containing the rules for allowing or denying access to files in the GOPHER_ROOT directory.
 - 
@@ -97,11 +97,11 @@ TLS_KEY_FILE=
 
 ### Firewall
 
-Gopher is an inherently insecure protocol. GoGopher provides an application-level firewall so that operators can at least control what is allowed to connect to the server and request its documents. These rules are configured in the file specified by the FIREWALL_CONFIG_FILE environment variable. By default, this is *`firewall-config.cfg`*
+Gopher is an inherently insecure protocol. GoGo provides an application-level firewall so that operators can at least control what is allowed to connect to the server and request its documents. These rules are configured in the file specified by the FIREWALL_CONFIG_FILE environment variable. By default, this is *`firewall-config.cfg`*
 
 Reasonable settings are in the default file: firewall is **enabled**, in **whitelist** mode, and allows connections only from the **local machine and local network**. 
 
-**GoGopher will not immediately be open to the internet without the operator explicitly configuring the firewall to allow it.**
+**GoGo will not immediately be open to the internet without the operator explicitly configuring the firewall to allow it.**
 
 ```firewall-config.json
 {
@@ -136,8 +136,8 @@ Gopher's default behavior for directory selectors is to present a menu of the di
 
 Gophermaps allow operators to customize directory menus. If any directory contains a file named *gophermap*, it is sent instead of the directory's contents.
 
-GoGopher provides a way to generate gophermaps from a template in any directory of the GOPHER_ROOT hierarchy. 
-If a file named *.gophermap* is found in the directory, GoGopher will 
+GoGo provides a way to generate gophermaps from a template in any directory of the GOPHER_ROOT hierarchy. 
+If a file named *.gophermap* is found in the directory, GoGo will 
 serve a dynamically generated gophermap if there isn't a file named *gophermap* in the directory.
 
 **If neither *.gophermap* nor *gophermap* is found, the directory's contents are served.**
@@ -148,7 +148,7 @@ serve a dynamically generated gophermap if there isn't a file named *gophermap* 
 | .gophermap          | A dynamically generated gophermap from the template .gophermap file |
 | *neither* (default) | The contents of the directory                                       |
 
-GoGopher generates the gophermap dynamically by substituting *tokens* with the values of variables dynamically.
+GoGo generates the gophermap dynamically by substituting *tokens* with the values of variables dynamically.
 
 | Token                   | Value Source                                                                                      |
 |-------------------------|---------------------------------------------------------------------------------------------------|
@@ -157,7 +157,7 @@ GoGopher generates the gophermap dynamically by substituting *tokens* with the v
 | {{PORT}                 | The port the host is lisenting on (70 by default)                                                 |
 | {{TLS_ENABLED}}         | Whether or not TLS enabled on the server                                                          |
 | {{CLIENT_IP_ADDRESS}}   | The IP Adress of the connected client                                                             |
-| {{SERVER}}              | Information about the GoGopher server running on the system                                       |
+| {{SERVER}}              | Information about the GoGo server running on the system                                       |
 | {{START_TIME}}          | The date/time the server started                                                                  |
 | {{UPTIME}}              | The duration that the server has been up and running                                              |
 | {{CURRENT_CONNECTIONS}} | The number of connections currently being served. (>1 will be very rare)                          |
@@ -187,7 +187,7 @@ Lua's **print** function is used to output the content to the client.
 
 ## Docker
 
-GoGopher supports running in a Docker container. 
+GoGo supports running in a Docker container. 
 
 ### Docker Pull
 
@@ -250,7 +250,7 @@ volumes:
 
 ## Setup
 
-Because GoGopher's purpose is to serve documents, it is recommended that operators create a bind mount for the GOPHER_ROOT directory so that documents are more easily managed outside the docker container. It will require Read permissions for directories and files.
+Because GoGo's purpose is to serve documents, it is recommended that operators create a bind mount for the GOPHER_ROOT directory so that documents are more easily managed outside the docker container. It will require Read permissions for directories and files.
 
 Example, change the docker-compose.yaml file to map a host volume to the container volume named in GOPHER_ROOT (/gopher-root)
 
