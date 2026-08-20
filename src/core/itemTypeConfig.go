@@ -2,7 +2,7 @@ package core
 
 import (
 	"encoding/json"
-	"gogopher/src/configuration"
+	"gogo/src/configuration"
 	"os"
 	"slices"
 )

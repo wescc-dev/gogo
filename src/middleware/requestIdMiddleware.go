@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"gogopher/src/core"
+	"gogo/src/core"
 	"net"
 	"time"
 )

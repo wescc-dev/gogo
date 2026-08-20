@@ -1,7 +1,7 @@
 package selectorHandler
 
 import (
-	"gogopher/src/core"
+	"gogo/src/core"
 )
 
 type SelectResult struct {
