@@ -1,2 +1,1 @@
-GoGopher-logo.png filter=lfs diff=lfs merge=lfs -text
-gopher-root/GoGopher-logo.png filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
