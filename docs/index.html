@@ -4,6 +4,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+      html {
+        font-family: sans-serif;
+        font-size: 110%;
+      }
       body {
         margin:32px;
       }
@@ -19,10 +23,9 @@
     <li>Supports file access rules</li>
     <li>Supports configurable extension-&gt;item type rules, with optional pictograms</li>
     <li>Supports Lua scripts</li>
-    <li>Supports hidden files and directories available only by direct selector</li>
-    <li>Supports configurable timeouts and maximum request size</li>
     <li>Supports gophermaps</li>
     <li>Supports dynamic gophermaps from templates</li>
+    <li>Supports hidden files and directories available only by direct selector</li>
     <li>Supports IPv4 and IPv6</li>
     <li>Supports Docker (optional) linux/amd64 and linux/arm64 images available on Docker Hub</li>
 </ul>
@@ -32,11 +35,10 @@
 <hr>
 <h2>Build and Run from Source</h2>
 <p><em><strong>Skip to the Docker section below if you don't want to build from source.</strong></em></p>
-<p>The source code for GoGo is available at:</p>
-<pre><code>https://github.com/wescc-dev/gogo
-</code></pre>
+<p>The source code for GoGo is available at: <a href="https://github.com/wescc-dev/gogo">https://github.com/wescc-dev/gogo</a></p>
+
 <ol>
-    <li>Install the latest Go SDK from https://golang.com</li>
+    <li>Install the latest Go SDK from <a href="https://golang.com">https://golang.com</a></li>
     <li>Build</li>
 </ol>
 <pre><code>go build -o gogo ./src
@@ -54,7 +56,7 @@
     in the shell used to run GoGo. EXPORTED environments, including those you set in your IDE or Docker container, will
     take precedent over the .env file.</p>
 <pre><code>
-  TITLE=&quot;Wes C's Official Gopher Hole&quot;
+TITLE=&quot;Wes C's Official Gopher Hole&quot;
 HOSTNAME=localhost
 HOST_BIND_IP=0.0.0.0
 PORT=70
