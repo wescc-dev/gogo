@@ -1,6 +1,6 @@
 name: gogo
 services:
-  gogopher:
+  gogo:
     image: dbppgpmdtacr/gogo:latest
     container_name: "gogo"
     pull_policy: "always"

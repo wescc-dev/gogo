@@ -9,11 +9,11 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build \
-    -ldflags="-X gogopher/src/configuration.BuildVersion=${VERSION} -extldflags=-static" \
-    -o gogopher ./src
+    -ldflags="-X gogo/src/configuration.BuildVersion=${VERSION} -extldflags=-static" \
+    -o gogo ./src
 
 FROM debian:bookworm-slim
-COPY --from=build /app/gogopher gogopher
+COPY --from=build /app/gogo gogo
 COPY .env .env
 COPY firewall-config.json firewall-config.json
 COPY file-access-config.json file-access-config.json
