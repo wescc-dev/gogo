@@ -34,4 +34,4 @@ ENV TITLE="Wes C's Gopher Hole" \
 VOLUME /gopher-root
 VOLUME /certs
 EXPOSE 70
-ENTRYPOINT ["/gogopher"]
+ENTRYPOINT ["/gogo"]

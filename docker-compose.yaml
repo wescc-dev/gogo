@@ -1,8 +1,8 @@
-name: gogopher
+name: gogo
 services:
   gogopher:
-    image: dbppgpmdtacr/gogopher:latest
-    container_name: "gogopher"
+    image: dbppgpmdtacr/gogo:latest
+    container_name: "gogo"
     pull_policy: "always"
     volumes:
       # Mount the gopher root directory read-only.
