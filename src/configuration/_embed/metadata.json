@@ -1,8 +1,8 @@
 {
-  "app_name": "Wes C's Go Gopher Server",
+  "app_name": "GoGo",
   "version": "0.2.0",
   "copyright": "Copyright©️ 2026 Wes C",
   "license": "MIT License",
-  "link": "https://github.com/wescc-dev/gogopher",
-  "footer": "i                   ------ Go Gopher Server© Wes C. -----\t\terror.host\t1\r\n"
+  "link": "https://github.com/wescc-dev/gogo.git",
+  "footer": "i                   ------ GoGo Server© Wes C. -----\t\terror.host\t1\r\n"
 }
