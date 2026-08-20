@@ -13,8 +13,8 @@ var metadata *Metadata
 // BuildVersion is set by the build process.
 //
 //	 go build \
-//			-ldflags="-X gogopher/src/configuration.BuildVersion=${VERSION} -extldflags=-static" \
-//			-o gogopher ./src
+//			-ldflags="-X gogo/src/configuration.BuildVersion=${VERSION} -extldflags=-static" \
+//			-o gogo ./src
 var BuildVersion = "XXXXXX"
 
 type Metadata struct {

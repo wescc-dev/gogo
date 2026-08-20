@@ -3,7 +3,7 @@ package security
 import (
 	"encoding/json"
 	"fmt"
-	"gogopher/src/configuration"
+	"gogo/src/configuration"
 	"log"
 	"os"
 	"path/filepath"

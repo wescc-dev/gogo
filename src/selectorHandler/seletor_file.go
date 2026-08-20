@@ -2,9 +2,9 @@ package selectorHandler
 
 import (
 	"fmt"
-	"gogopher/src/core"
-	"gogopher/src/security"
-	"gogopher/src/utility"
+	"gogo/src/core"
+	"gogo/src/security"
+	"gogo/src/utility"
 	"path/filepath"
 )
 

@@ -1,4 +1,4 @@
-module gogopher
+module gogo
 
 go 1.26
 

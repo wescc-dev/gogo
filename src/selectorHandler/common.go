@@ -2,7 +2,7 @@ package selectorHandler
 
 import (
 	"fmt"
-	"gogopher/src/configuration"
+	"gogo/src/configuration"
 	"io"
 	"net"
 	"os"
