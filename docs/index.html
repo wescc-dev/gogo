@@ -1,0 +1,313 @@
+<p><img src="gogo-logo-1220x352.png" alt="GoGo" width="75%"></p>
+<p>An effective <strong>Gopher server</strong> written in Go by Wes C.</p>
+<h2>Features</h2>
+<ul>
+<li>Supports TLS</li>
+<li>Supports firewall</li>
+<li>Supports file access rules</li>
+<li>Supports configurable extension-&gt;item type rules, with optional pictograms</li>
+<li>Supports Lua scripts</li>
+<li>Supports hidden files and directories available only by direct selector</li>
+<li>Supports configurable timeouts and maximum request size</li>
+<li>Supports gophermaps</li>
+<li>Supports dynamic gophermaps from templates</li>
+<li>Supports IPv4 and IPv6</li>
+<li>Supports Docker (optional) linux/amd64 and linux/arm64 images available on Docker Hub</li>
+</ul>
+<hr>
+<h2>LICENSE</h2>
+<p>GoGo is provided under the MIT License. See the <a href="LICENSE">LICENSE</a> file including in this repository.</p>
+<hr>
+<h2>Build and Run from Source</h2>
+<p><em><strong>Skip to the Docker section below if you don't want to build from source.</strong></em></p>
+<p>The source code for GoGo is available at:</p>
+<pre><code>https://github.com/wescc-dev/gogo
+</code></pre>
+<ol>
+<li>Install the latest Go SDK from https://golang.com</li>
+<li>Build</li>
+</ol>
+<pre><code>go build -o gogo ./src
+</code></pre>
+<ol start="3">
+<li>Run</li>
+</ol>
+<pre><code>./gogo
+</code></pre>
+<hr>
+<h2>Configure</h2>
+<p>Configure environment variables and firewall.</p>
+<h3>Environment Variables</h3>
+<p>Reasonable default environment variables are in the .env file. You can edit this file or export environment variables in the shell used to run GoGo. EXPORTED environments, including those you set in your IDE or Docker container, will take precedent over the .env file.</p>
+<pre><code>TITLE=&quot;Wes C's Official Gopher Hole&quot;
+HOSTNAME=localhost
+HOST_BIND_IP=0.0.0.0
+PORT=70
+TLS_CERT_FILE=
+TLS_KEY_FILE=
+GOPHER_ROOT=gopher-root
+FIREWALL_CONFIG_FILE=firewall-config.json
+FILE_ACCESS_CONFIG_FILE=file-access-config.json
+ITEM_TYPE_CONFIG_FILE=item-type-config.json
+REQUEST_TIMEOUT_SECONDS=30
+REQUEST_MAXIMUM_BYTES=1024
+TLS_CERT_FILE=
+TLS_KEY_FILE=
+</code></pre>
+<ul>
+<li>
+<p><strong>TITLE</strong> is the name of your gopher hole. It is only displayed in the gophermap generated from the .gophermap in the GOPHER_ROOT directory.</p>
+</li>
+<li>
+<p><strong>HOSTNAME</strong> is the host name clients use to connect to your server (e.g. <em>gopher://HOSTNAME.com</em>). It is used to create the selectors.</p>
+</li>
+<li>
+<p><strong>HOST_BIND_IP</strong> is the IP address that the server listens for client requests.
+It may or may not correspond to HOSTNAME. For example, if running in a Docker container, the HOSTNAME may resolve to the host's IP address while GoGo is listening on a Docker network address. (Inside a container, 0.0.0.0 is the simplest).</p>
+</li>
+<li>
+<p><strong>PORT</strong> is the port the server listens on.</p>
+</li>
+<li>
+<p><strong>TLS_CERT_FILE</strong> and <strong>TLS_KEY_FILE</strong> are optional paths to the server certificate and private key. Set both to enable TLS; leave both empty to use plain TCP.</p>
+</li>
+<li>
+<p><strong>GOPHER_ROOT</strong> is the root directory of the documents you want to provide through Gopher. <strong>Anything in this directory hierarchy is intended to be accessed by the public in clear text.</strong>
+The one exception is that GoGo will <strong>not</strong> serve any files or directories beginning with a period (.)
+So, for example, <em>gopher-root/public/.private.text</em> will <strong>not</strong> be served.</p>
+</li>
+<li>
+<p><strong>FIREWALL_CONFIG_FILE</strong> is the file containing the firewall rules, which control what IP addresses are allowed to connect to your GoGo server. (See below.)</p>
+</li>
+<li>
+<p><strong>FILE_ACCESS_CONFIG_FILE</strong> is the file containing the rules for allowing or denying access to files in the GOPHER_ROOT directory.</p>
+</li>
+<li>
+<p><strong>ITEM_TYPE_CONFIG_FILE</strong> is the file containing the relationships between file extensions and Gopher item types.</p>
+</li>
+<li>
+<p><strong>REQUEST_TIMEOUT_SECONDS</strong> is the number of seconds to read a request and to write the response (per each direction, not the total time for both read and write). This prevents consuming a connection with a very slow request/ response, intentionally or otherwise.</p>
+</li>
+<li>
+<p><strong>REQUEST_MAXIMUM_BYTES</strong> is the maximum number of bytes for a client request. This prevents clients from sending a request that consumes too much memory.
+The Gopher protocol does not define a maxium request size, but modern servers definitely need one. I used 1k (1024) as the default, based on the more modern Gemini protocol's maximum.</p>
+</li>
+<li>
+<p><strong>TLS_CERT_FILE</strong> and <strong>TLS_KEY_FILE</strong> are optional paths to the server certificate and private key. Set both to enable TLS; leave both empty to use plain TCP.</p>
+</li>
+</ul>
+<h3>Firewall</h3>
+<p>Gopher is an inherently insecure protocol. GoGo provides an application-level firewall so that operators can at least control what is allowed to connect to the server and request its documents. These rules are configured in the file specified by the FIREWALL_CONFIG_FILE environment variable. By default, this is <em><code>firewall-config.cfg</code></em></p>
+<p>Reasonable settings are in the default file: firewall is <strong>enabled</strong>, in <strong>whitelist</strong> mode, and allows connections only from the <strong>local machine and local network</strong>.</p>
+<p><strong>GoGo will not immediately be open to the internet without the operator explicitly configuring the firewall to allow it.</strong></p>
+<pre><code class="language-firewall-config.json">{
+  &quot;enabled&quot;: true,
+  &quot;mode&quot;: &quot;whitelist&quot;,
+  &quot;allowedIps&quot;: [
+    &quot;127.0.0.1&quot;,
+    &quot;192.168.1.*&quot;,
+    &quot;10.0.0.0/8&quot;,
+    &quot;::1&quot;,
+    &quot;2001:db8::/32&quot;
+  ],
+  &quot;blockedIps&quot;: []
+}
+</code></pre>
+<p>For production, the operator will probably want to set it to <em>blacklist</em> mode and add blockedIps as needed. Setting <strong>enabled</strong> to <em>false</em> will disable the firewall completely, allowing connections from any client anywhere in the universe.</p>
+<p>Mode can be set to either</p>
+<ul>
+<li>
+<p><strong>whitelist</strong> - only IP address in the &quot;allowedIps&quot; list can connect. Others will be dropped.</p>
+</li>
+<li>
+<p><strong>blacklist</strong> - IP addresses in the &quot;blockedIps&quot; list will be dropped. All others can connect.</p>
+</li>
+</ul>
+<p>IP Addresses can be individual addresses, a range in CIDR notation, or wildcard (*) placeholders.</p>
+<p><em>(Note: An entry with a single * indicates all IP addresses)</em></p>
+<hr>
+<h2>Gophermap Template</h2>
+<p>Gopher's default behavior for directory selectors is to present a menu of the directory's contents. This includes subdirectories so the user can navigate the server's document library.</p>
+<p>Gophermaps allow operators to customize directory menus. If any directory contains a file named <em>gophermap</em>, it is sent instead of the directory's contents.</p>
+<p>GoGo provides a way to generate gophermaps from a template in any directory of the GOPHER_ROOT hierarchy.
+If a file named <em>.gophermap</em> is found in the directory, GoGo will
+serve a dynamically generated gophermap if there isn't a file named <em>gophermap</em> in the directory.</p>
+<p><strong>If neither <em>.gophermap</em> nor <em>gophermap</em> is found, the directory's contents are served.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Gophermap File</th>
+<th>Content sent to Client</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>gophermap</td>
+<td>The contents of the file</td>
+</tr>
+<tr>
+<td>.gophermap</td>
+<td>A dynamically generated gophermap from the template .gophermap file</td>
+</tr>
+<tr>
+<td><em>neither</em> (default)</td>
+<td>The contents of the directory</td>
+</tr>
+</tbody>
+</table>
+<p>GoGo generates the gophermap dynamically by substituting <em>tokens</em> with the values of variables dynamically.</p>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Value Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{{TITLE}}</td>
+<td>TITLE Environment Variable</td>
+</tr>
+<tr>
+<td>{{HOST}}</td>
+<td>Host name of the server</td>
+</tr>
+<tr>
+<td>{{PORT}</td>
+<td>The port the host is lisenting on (70 by default)</td>
+</tr>
+<tr>
+<td>{{TLS_ENABLED}}</td>
+<td>Whether or not TLS enabled on the server</td>
+</tr>
+<tr>
+<td>{{CLIENT_IP_ADDRESS}}</td>
+<td>The IP Adress of the connected client</td>
+</tr>
+<tr>
+<td>{{SERVER}}</td>
+<td>Information about the GoGo server running on the system</td>
+</tr>
+<tr>
+<td>{{START_TIME}}</td>
+<td>The date/time the server started</td>
+</tr>
+<tr>
+<td>{{UPTIME}}</td>
+<td>The duration that the server has been up and running</td>
+</tr>
+<tr>
+<td>{{CURRENT_CONNECTIONS}}</td>
+<td>The number of connections currently being served. (&gt;1 will be very rare)</td>
+</tr>
+<tr>
+<td>{{TOTAL_CONNECTIONS}}</td>
+<td>Total number of connections the server has handled since it started up. (Not a persistent total.)</td>
+</tr>
+<tr>
+<td>{{OS}}</td>
+<td>The operating system of the server</td>
+</tr>
+<tr>
+<td>{{ARCH}}</td>
+<td>The servers CPU architectire</td>
+</tr>
+<tr>
+<td>{{CPUS}}</td>
+<td>The number of CPUS/Cores on the server</td>
+</tr>
+<tr>
+<td>{{ENTRIES}}</td>
+<td>Selectors for the contents of the directory</td>
+</tr>
+<tr>
+<td>{{=}}, {{-}}, {{*}}</td>
+<td>A decorative line of =, *, or - characters, primarily for dividers.</td>
+</tr>
+</tbody>
+</table>
+<p>There are some examples of .gophermap templates in the <em>gophermap-templates</em> directory.</p>
+<hr>
+<h2>Special Files and Directories</h2>
+<h3>Hidden Files and Directories</h3>
+<p>Any file or directory beginning with $ is considered hidden, and will not have selectors generated for it by .gophermap templates or raw directory lists.</p>
+<p>Hidden files and directories are available only by direct selectors.</p>
+<p><em>Users must know and use the direct selector to access hidden files and directories.</em></p>
+<h3>Lua Scripts</h3>
+<p>Lua scripts are supported for dynamic content. Files with a .lua extension are executed when the directory is accessed.
+The script is passed a server object with context information.
+Lua's <strong>print</strong> function is used to output the content to the client.</p>
+<hr>
+<h2>Docker</h2>
+<p>GoGo supports running in a Docker container.</p>
+<h3>Docker Pull</h3>
+<p>The latest image is available with docker pull.</p>
+<pre><code>docker pull dbppgpmdtacr/gogo:latest
+</code></pre>
+<p>You should then configure the network, ports, volume, and environment variable when you run the image.</p>
+<p>See above for the <strong>environment variables</strong></p>
+<h3>Docker Compose</h3>
+<p>Instead of pulling and configuring the image when you run it, you can run the default image with the <em>docker-compose.yaml</em> file in your git working directory of this repository.</p>
+<p>This is an example. Be sure to set the network, ports, volume, and environment variables to suit.</p>
+<pre><code>name: gogo
+services:
+  gogo:
+    image: dbppgpmdtacr/gogo:latest
+    container_name: &quot;gogo&quot;
+    volumes:
+      # Mount the gopher root directory read-only.
+      # Consider binding a host path for easier updates.
+
+      - gopher-root:/gopher-root:ro
+
+      # Optional native TLS certificate and private key.
+      #- ./certs:/certs:ro
+
+      # Consider binding these config files to host paths for easier updates
+      # It is recommended to use read-only mode.
+
+      #- ./firewall-config.json:/firewall-config.json:ro
+      #- ./file-access-config.json:/file-access-config.json:ro
+    environment:
+      - TITLE=&quot;Wes C's Gopher Server&quot;
+      - HOSTNAME=localhost
+      - HOST_BIND_IP=0.0.0.0
+      - PORT=70
+      - GOPHER_ROOT=/gopher-root
+      - FIREWALL_CONFIG_FILE=firewall-config.json
+      - FILE_ACCESS_CONFIG_FILE=file-access-config.json
+      - ITEM_TYPE_CONFIG_FILE=item-type-config.json
+      - REQUEST_TIMEOUT_SECONDS=30
+      - REQUEST_MAXIMUM_BYTES=1024
+      # Uncomment both settings and the certificate mount to enable TLS.
+      #- TLS_CERT_FILE=/certs/server.crt
+      #- TLS_KEY_FILE=/certs/server.key
+    ports:
+      - '70:70'
+volumes:
+  gopher-root:
+</code></pre>
+<h2>Setup</h2>
+<p>Because GoGo's purpose is to serve documents, it is recommended that operators create a bind mount for the GOPHER_ROOT directory so that documents are more easily managed outside the docker container. It will require Read permissions for directories and files.</p>
+<p>Example, change the docker-compose.yaml file to map a host volume to the container volume named in GOPHER_ROOT (/gopher-root)</p>
+<pre><code>services:
+  gogo:
+    volumes:
+      - /home/yourusername/gopher-root:/gopher-root
+</code></pre>
+<p>Ensure that the HOST_BIND_ADDRESS and PORT environment variables match those used by the container.</p>
+<p>The gopher protocol's official standard port is 70.</p>
+<p>Standard URL. *This assumes the container has mapped host port 70 to container port 70.</p>
+<pre><code>    ports:  
+      - '70:70'
+</code></pre>
+<pre><code>gopher://localhost
+</code></pre>
+<p>Operators can modify either the host or container ports.</p>
+<pre><code>    ports:  
+      - '7070:70'
+</code></pre>
+<pre><code>gopher://localhost:7070
+</code></pre>
+<p><em>Note that it was not necessary to change the container port.</em></p>
+<p>The HOST_BIND_ADDRESS may need to change for your Docker environment. One common gotcha is that it's not listening on 127.0.0.1 in most cases. It's bound to an <strong>internal container IP address</strong>, not a host address (unless you configure the container network settings to do so).</p>

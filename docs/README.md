@@ -3,6 +3,7 @@
 An effective **Gopher server** written in Go by Wes C.
 
 ## Features
+
 - Supports TLS
 - Supports firewall
 - Supports file access rules
@@ -15,9 +16,13 @@ An effective **Gopher server** written in Go by Wes C.
 - Supports IPv4 and IPv6
 - Supports Docker (optional) linux/amd64 and linux/arm64 images available on Docker Hub
 
+---
+
 ## LICENSE
 
 GoGo is provided under the MIT License. See the [LICENSE](LICENSE) file including in this repository. 
+
+---
 
 ## Build and Run from Source
 
@@ -41,6 +46,8 @@ go build -o gogo ./src
 ```
 ./gogo
 ```
+
+---
 
 ## Configure
 
@@ -85,7 +92,7 @@ TLS_KEY_FILE=
 - **FIREWALL_CONFIG_FILE** is the file containing the firewall rules, which control what IP addresses are allowed to connect to your GoGo server. (See below.)
 
 - **FILE_ACCESS_CONFIG_FILE** is the file containing the rules for allowing or denying access to files in the GOPHER_ROOT directory.
-- 
+
 - **ITEM_TYPE_CONFIG_FILE** is the file containing the relationships between file extensions and Gopher item types.
 
 - **REQUEST_TIMEOUT_SECONDS** is the number of seconds to read a request and to write the response (per each direction, not the total time for both read and write). This prevents consuming a connection with a very slow request/ response, intentionally or otherwise.
@@ -130,6 +137,8 @@ IP Addresses can be individual addresses, a range in CIDR notation, or wildcard 
 
 *(Note: An entry with a single * indicates all IP addresses)*
 
+---
+
 ## Gophermap Template
 
 Gopher's default behavior for directory selectors is to present a menu of the directory's contents. This includes subdirectories so the user can navigate the server's document library.
@@ -151,13 +160,13 @@ serve a dynamically generated gophermap if there isn't a file named *gophermap* 
 GoGo generates the gophermap dynamically by substituting *tokens* with the values of variables dynamically.
 
 | Token                   | Value Source                                                                                      |
-|-------------------------|---------------------------------------------------------------------------------------------------|
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
 | {{TITLE}}               | TITLE Environment Variable                                                                        |
 | {{HOST}}                | Host name of the server                                                                           |
 | {{PORT}                 | The port the host is lisenting on (70 by default)                                                 |
 | {{TLS_ENABLED}}         | Whether or not TLS enabled on the server                                                          |
 | {{CLIENT_IP_ADDRESS}}   | The IP Adress of the connected client                                                             |
-| {{SERVER}}              | Information about the GoGo server running on the system                                       |
+| {{SERVER}}              | Information about the GoGo server running on the system                                           |
 | {{START_TIME}}          | The date/time the server started                                                                  |
 | {{UPTIME}}              | The duration that the server has been up and running                                              |
 | {{CURRENT_CONNECTIONS}} | The number of connections currently being served. (>1 will be very rare)                          |
@@ -170,9 +179,12 @@ GoGo generates the gophermap dynamically by substituting *tokens* with the value
 
 There are some examples of .gophermap templates in the *gophermap-templates* directory.
 
+---
+
 ## Special Files and Directories
 
 ### Hidden Files and Directories
+
 Any file or directory beginning with $ is considered hidden, and will not have selectors generated for it by .gophermap templates or raw directory lists.
 
 Hidden files and directories are available only by direct selectors.
@@ -184,6 +196,8 @@ Hidden files and directories are available only by direct selectors.
 Lua scripts are supported for dynamic content. Files with a .lua extension are executed when the directory is accessed.
 The script is passed a server object with context information. 
 Lua's **print** function is used to output the content to the client.
+
+---
 
 ## Docker
 
@@ -245,7 +259,6 @@ services:
       - '70:70'
 volumes:
   gopher-root:
-
 ```
 
 ## Setup
@@ -286,6 +299,7 @@ Operators can modify either the host or container ports.
 ```
 gopher://localhost:7070
 ```
+
 *Note that it was not necessary to change the container port.*
 
 The HOST_BIND_ADDRESS may need to change for your Docker environment. One common gotcha is that it's not listening on 127.0.0.1 in most cases. It's bound to an **internal container IP address**, not a host address (unless you configure the container network settings to do so).
