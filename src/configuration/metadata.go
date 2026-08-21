@@ -15,7 +15,7 @@ var metadata *Metadata
 //	 go build \
 //			-ldflags="-X gogo/src/configuration.BuildVersion=${VERSION} -extldflags=-static" \
 //			-o gogo ./src
-var BuildVersion = "XXXXXX"
+var BuildVersion string = ""
 
 type Metadata struct {
 	AppName   string `json:"app_name"`
@@ -55,6 +55,9 @@ func loadMetadata() (*Metadata, error) {
 	if err != nil {
 		return &Metadata{}, err
 	}
-	meta.Version = BuildVersion
+	if BuildVersion != "" {
+		meta.Version = BuildVersion
+	}
+
 	return &meta, err
 }

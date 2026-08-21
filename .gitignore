@@ -5,3 +5,4 @@ docker-build.sh
 /docker-compose.local.yaml
 /build-scripts/
 /certs/
+gogo
