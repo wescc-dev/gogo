@@ -63,8 +63,6 @@ FILE_ACCESS_CONFIG_FILE=file-access-config.json
 ITEM_TYPE_CONFIG_FILE=item-type-config.json
 REQUEST_TIMEOUT_SECONDS=30
 REQUEST_MAXIMUM_BYTES=1024
-TLS_CERT_FILE=
-TLS_KEY_FILE=
 ```
 
 - **TITLE** is the name of your gopher hole. It is only displayed in the gophermap generated from the .gophermap in the GOPHER_ROOT directory.

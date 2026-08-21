@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"gogo/src/configuration"
 	"gogo/src/core"
 	"gogo/src/middleware"
@@ -12,39 +13,20 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/spf13/pflag"
 )
 
 var cfg = configuration.GetConfiguration()
 
 func main() {
+	parseFlags()
 	printConfiguration()
 	svr := startServer()
 	<-waitForShutdownSignal()
 	log.Println("Shutdown signal received")
 	_ = stopServer(svr)
 	log.Println("Exiting normally.")
-
-}
-
-func printConfiguration() {
-	log.Println("---------- GoGopher Server --------")
-	log.Println(cfg.Metadata.AppName + "(" + cfg.Metadata.Version + ")")
-	log.Println(cfg.Metadata.Copyright)
-	log.Println(cfg.Metadata.Link)
-	log.Println("---------- Configuration ----------")
-	log.Println("Title:", cfg.Title)
-	log.Println("Host Name:", cfg.HostName)
-	log.Println("Host bind ip:", cfg.BindAddress)
-	log.Println("Port:", cfg.Port)
-	log.Println("TLS certificate:", cfg.TLSCertFile)
-	log.Println("TLS key:", cfg.TLSKeyFile)
-	log.Println("Gopher root:", cfg.GopherRoot)
-	log.Println("Firewall config:", cfg.FireWallConfigFile)
-	log.Println("Request timeout (sec.):", cfg.RequestTimeoutDuration)
-	log.Println("OS:", cfg.OS)
-	log.Println("Architecture:", cfg.Architecture)
-	log.Println("Number of CPUs:", cfg.NumCpus)
-	log.Println("----------------------------------")
 
 }
 
@@ -92,4 +74,60 @@ func waitForShutdownSignal() chan os.Signal {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	return sig
+}
+
+func parseFlags() {
+	info := pflag.BoolP("info", "?", false, "Show server info")
+	title := pflag.StringP("title", "t", cfg.Title, "Server title")
+	hostName := pflag.StringP("hostname", "h", cfg.HostName, "Server hostname")
+	hostBindAddress := pflag.StringP("bind", "b", cfg.BindAddress, "Server bind address")
+	port := pflag.StringP("port", "p", cfg.Port, "Server port")
+	gopherRoot := pflag.StringP("gopher-root", "r", cfg.GopherRoot, "Gopher root directory")
+	firewallConfigFile := pflag.StringP("firewall-config", "f", cfg.FireWallConfigFile, "Firewall configuration file")
+	fileAccessConfigFile := pflag.StringP("file-access-config", "a", cfg.FileAccessConfigFile, "File access configuration file")
+	itemTypeConfigFile := pflag.StringP("item-type-config", "i", cfg.ItemTypeConfigFile, "Item type configuration file")
+	requestTimeout := pflag.StringP("request-timeout", "o", cfg.RequestTimeoutDuration.String(), "Request timeout duration")
+	requestMaximumBytes := pflag.IntP("request-maximum-bytes", "m", cfg.RequestMaximumBytes, "Request maximum bytes")
+	pflag.Parse()
+	if *info {
+		printInfo()
+		pflag.Usage()
+		os.Exit(0)
+	}
+	cfg.Title = *title
+	cfg.HostName = *hostName
+	cfg.BindAddress = *hostBindAddress
+	cfg.Port = *port
+	cfg.GopherRoot = *gopherRoot
+	cfg.FireWallConfigFile = *firewallConfigFile
+	cfg.FileAccessConfigFile = *fileAccessConfigFile
+	cfg.ItemTypeConfigFile = *itemTypeConfigFile
+	cfg.RequestTimeoutDuration, _ = time.ParseDuration(*requestTimeout)
+	cfg.RequestMaximumBytes = *requestMaximumBytes
+}
+
+func printConfiguration() {
+	printInfo()
+	log.Println("------------ Configuration -----------")
+	log.Println("Title:", cfg.Title)
+	log.Println("Host Name:", cfg.HostName)
+	log.Println("Host bind ip:", cfg.BindAddress)
+	log.Println("Port:", cfg.Port)
+	log.Println("TLS certificate:", cfg.TLSCertFile)
+	log.Println("TLS key:", cfg.TLSKeyFile)
+	log.Println("Gopher root:", cfg.GopherRoot)
+	log.Println("Firewall config:", cfg.FireWallConfigFile)
+	log.Println("Request timeout (sec.):", cfg.RequestTimeoutDuration)
+	log.Println("OS:", cfg.OS)
+	log.Println("Architecture:", cfg.Architecture)
+	log.Println("Number of CPUs:", cfg.NumCpus)
+	log.Println("-------------------------------------")
+}
+
+func printInfo() {
+	log.Println("---------- GoGo Gopher Server --------")
+	log.Println(cfg.Metadata.AppName + "(" + cfg.Metadata.Version + ")")
+	log.Println(cfg.Metadata.Copyright)
+	fmt.Println(cfg.Metadata.License)
+	log.Println(cfg.Metadata.Link)
 }
