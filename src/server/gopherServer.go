@@ -8,7 +8,7 @@ import (
 	"gogo/src/configuration"
 	"gogo/src/core"
 	"gogo/src/security"
-	"gogo/src/selectorHandler"
+	"gogo/src/selectors"
 	"io"
 	"net"
 	"path/filepath"
@@ -40,7 +40,7 @@ type gopherServer struct {
 	stopTime         time.Time
 	totalConnections int
 
-	selectors       []selectorHandler.ISelectorHandler
+	selectors       []selectors.ISelector
 	mu              sync.Mutex
 	listener        net.Listener
 	conns           map[net.Conn]struct{}
@@ -88,7 +88,7 @@ func NewServer(
 		RequestTimeoutDuration: requestTimeoutDuration,
 		RequestMaximumBytes:    requestMaximumBytea,
 		Middlewares:            []core.Middleware{},
-		selectors:              []selectorHandler.ISelectorHandler{},
+		selectors:              []selectors.ISelector{},
 		clientWaitGroup:        sync.WaitGroup{},
 		acceptDone:             make(chan struct{}),
 		stopRequested:          false,
@@ -119,10 +119,10 @@ func (s *gopherServer) Start() error {
 
 	s.mu.Lock()
 	s.Handler = s.useMiddleware(s.serveSelector)
-	s.selectors = []selectorHandler.ISelectorHandler{
-		selectorHandler.NewDirectorySelectorHandler(s),
-		selectorHandler.NewLuaSelectorHandler(s),
-		selectorHandler.NewFileSelectorHandler(s)}
+	s.selectors = []selectors.ISelector{
+		selectors.NewDirectorySelector(s),
+		selectors.NewLuaSelector(s),
+		selectors.NewFileSelector(s)}
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})
 	s.startTime = time.Now()
@@ -297,7 +297,7 @@ func (s *gopherServer) readSelector(conn net.Conn, maxBytes int64, timeOut time.
 	req, err := reader.ReadString('\n')
 	if err != nil {
 		if err == io.EOF {
-			_ = selectorHandler.WriteErrorToConn(conn, timeOut, "Access denied")
+			_ = selectors.WriteErrorToConn(conn, timeOut, "Access denied")
 
 			return "", fmt.Errorf("request size exceeded maximum %d bytes", maxBytes)
 		}
@@ -311,7 +311,7 @@ func (s *gopherServer) serveSelector(ctx *core.RequestContext) error {
 
 	cleanSelector, realPath, err := resolveSelectorPath(ctx.Request.RootDir, ctx.Request.Selector)
 	if err != nil {
-		_ = selectorHandler.WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Access denied")
+		_ = selectors.WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Access denied")
 		return fmt.Errorf("cannot write error message: %w", err)
 	}
 
@@ -322,7 +322,7 @@ func (s *gopherServer) serveSelector(ctx *core.RequestContext) error {
 	core.ContextLog(ctx, "Serving selector:", ctx.Request.Selector)
 
 	if err := security.AssertFileSystemAccess(realPath); err != nil {
-		_ = selectorHandler.WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Not found")
+		_ = selectors.WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Not found")
 		return err
 	}
 
@@ -337,7 +337,7 @@ func (s *gopherServer) serveSelector(ctx *core.RequestContext) error {
 	}
 
 	// Not found
-	_ = selectorHandler.WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Not found")
+	_ = selectors.WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Not found")
 	return fmt.Errorf("file not found: %s", realPath)
 }
 

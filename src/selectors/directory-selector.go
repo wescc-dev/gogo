@@ -1,4 +1,4 @@
-package selectorHandler
+package selectors
 
 import (
 	"bufio"
@@ -6,30 +6,26 @@ import (
 	"fmt"
 	"gogo/src/configuration"
 	"gogo/src/core"
-	"gogo/src/security"
 	"gogo/src/utility"
-	"io/fs"
 	"net"
 	"os"
-	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 )
 
-// DirectorySelectorHandler handles directory selectors
-type DirectorySelectorHandler struct {
+// DirectorySelector handles directory selectors
+type DirectorySelector struct {
 	svrInfoViewProvider core.IServerInfoViewProvider
 }
 
-func NewDirectorySelectorHandler(svrInfoViewProvider core.IServerInfoViewProvider) ISelectorHandler {
-	return &DirectorySelectorHandler{
+func NewDirectorySelector(svrInfoViewProvider core.IServerInfoViewProvider) ISelector {
+	return &DirectorySelector{
 		svrInfoViewProvider: svrInfoViewProvider,
 	}
 }
 
-func (d *DirectorySelectorHandler) Select(ctx *core.RequestContext) (*SelectResult, error) {
+func (d *DirectorySelector) Select(ctx *core.RequestContext) (*SelectResult, error) {
 	result := &SelectResult{false}
 	selectorPath := filepath.Join(ctx.Request.RootDir, ctx.Request.Selector)
 	// If it's a directory
@@ -43,7 +39,7 @@ func (d *DirectorySelectorHandler) Select(ctx *core.RequestContext) (*SelectResu
 	return result, nil
 }
 
-func (d *DirectorySelectorHandler) serveDirectory(ctx *core.RequestContext, selectorPath string, selector string, timeOut time.Duration) error {
+func (d *DirectorySelector) serveDirectory(ctx *core.RequestContext, selectorPath string, selector string, timeOut time.Duration) error {
 	defer func(ctx *core.RequestContext, t time.Time) {
 		_ = ctx.Request.Conn.SetReadDeadline(t)
 	}(ctx, time.Time{})
@@ -96,7 +92,7 @@ func (d *DirectorySelectorHandler) serveDirectory(ctx *core.RequestContext, sele
 	return nil
 }
 
-func (d *DirectorySelectorHandler) serveGopherMap(ctx *core.RequestContext, selectorPath string) (bool, error) {
+func (d *DirectorySelector) serveGopherMap(ctx *core.RequestContext, selectorPath string) (bool, error) {
 	svrInfo := d.svrInfoViewProvider.GetCurrentServerInfo()
 	gophermapPath := filepath.Join(selectorPath, "gophermap")
 	gophermapTemplatePath := filepath.Join(selectorPath, svrInfo.GophermapTemplateName)
@@ -121,7 +117,7 @@ func (d *DirectorySelectorHandler) serveGopherMap(ctx *core.RequestContext, sele
 	return false, nil
 }
 
-func (d *DirectorySelectorHandler) generateGopherMap(ctx *core.RequestContext, svrInfo core.ServerInfoView, dirPath string) error {
+func (d *DirectorySelector) generateGopherMap(ctx *core.RequestContext, svrInfo core.ServerInfoView, dirPath string) error {
 	if info, err := os.Stat(svrInfo.GopherRoot); !(err == nil && info.IsDir()) {
 		if err := os.MkdirAll(svrInfo.GopherRoot, os.ModePerm); err != nil {
 			return fmt.Errorf("GopherRoot %s does not exist and could not be created. No files will be served", svrInfo.GopherRoot)
@@ -158,13 +154,13 @@ func (d *DirectorySelectorHandler) generateGopherMap(ctx *core.RequestContext, s
 	return nil
 }
 
-func (d *DirectorySelectorHandler) addFooter(templateContent string) string {
+func (d *DirectorySelector) addFooter(templateContent string) string {
 	m, _ := configuration.GetMetadata()
 	templateContent += m.Footer
 	return templateContent
 }
 
-func (d *DirectorySelectorHandler) replaceDirectoryEntriesToken(ctx *core.RequestContext, dirPath string, content string) (string, error) {
+func (d *DirectorySelector) replaceDirectoryEntriesToken(ctx *core.RequestContext, dirPath string, content string) (string, error) {
 	// Now handle {{ENTRIES}}
 	entries, err := d.generateEntries(ctx, dirPath)
 	if err != nil {
@@ -175,7 +171,7 @@ func (d *DirectorySelectorHandler) replaceDirectoryEntriesToken(ctx *core.Reques
 	return content, nil
 }
 
-func (d *DirectorySelectorHandler) replaceSingleTokens(conn net.Conn, svrInfo core.ServerInfoView, content string) (string, error) {
+func (d *DirectorySelector) replaceSingleTokens(conn net.Conn, svrInfo core.ServerInfoView, content string) (string, error) {
 	clientIP, _, err := net.SplitHostPort(conn.RemoteAddr().String())
 	if err != nil {
 		return content, err
@@ -210,25 +206,8 @@ func (d *DirectorySelectorHandler) replaceSingleTokens(conn net.Conn, svrInfo co
 	}
 	return content, nil
 }
-func readDirFiltered(dirPath string) ([]fs.DirEntry, error) {
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
-		return nil, err
-	}
 
-	filtered := make([]fs.DirEntry, 0, len(entries))
-
-	for _, entry := range entries {
-		fullPath := filepath.Join(dirPath, entry.Name())
-		if err := security.AssertFileSystemAccess(fullPath); err == nil {
-			filtered = append(filtered, entry)
-		}
-	}
-
-	return filtered, nil
-}
-
-func (d *DirectorySelectorHandler) generateEntries(ctx *core.RequestContext, dirPath string) (string, error) {
+func (d *DirectorySelector) generateEntries(ctx *core.RequestContext, dirPath string) (string, error) {
 	entries, err := readDirFiltered(dirPath)
 	if err != nil {
 		return "", fmt.Errorf("cannot read gopher root: %w", err)
@@ -247,62 +226,4 @@ func (d *DirectorySelectorHandler) generateEntries(ctx *core.RequestContext, dir
 	}
 	_ = w.Flush()
 	return entriesBuf.String(), nil
-}
-
-func buildGopherEntry(e fs.DirEntry, selector string, host string, port string) (string, error) {
-	name := e.Name()
-	// Skip hidden files
-	if strings.HasPrefix(name, ".") {
-		return "", nil
-	}
-	// Skip secret files and directories
-	if strings.HasPrefix(name, "$") {
-		return "", nil
-	}
-	// Skip gophermap files
-	if name == "gophermap" {
-		return "", nil
-	}
-
-	// Always use path.Join for gopher selectors
-	fullSelector := path.Join("/"+selector, name)
-
-	// Directories
-	itemType, pictogram := getGopherItemTypeByExtension("/")
-	if e.IsDir() {
-		return buildSelectorWithPictogram(itemType, pictogram+" ", name, fullSelector, host, port), nil
-	}
-
-	return buildSelector(name, fullSelector, host, port), nil
-}
-
-func buildSelector(name string, fullSelector string, host string, port string) string {
-	ext := strings.ToLower(filepath.Ext(name))
-	itemType, pictogram := getGopherItemTypeByExtension(ext)
-	return buildSelectorWithPictogram(itemType, pictogram+" ", name, fullSelector, host, port)
-}
-
-func getGopherItemTypeByExtension(ext string) (string, string) {
-	itemType, pictogram := core.GetItemTypeByExtension(ext)
-	return itemType, pictogram
-}
-
-func buildSelectorWithPictogram(itemType string, pictogram string, name string, fullSelector string, host string, port string) string {
-	return itemType + pictogram + name + "\t" + fullSelector + "\t" + host + "\t" + port + "\r\n"
-}
-
-func sortDirectoryEntries(entries []os.DirEntry) {
-	// Sort entries by name, case-insensitive
-	sort.Slice(entries, func(i, j int) bool {
-		iIsDir := entries[i].IsDir()
-		jIsDir := entries[j].IsDir()
-
-		// Directories first
-		if iIsDir != jIsDir {
-			return !iIsDir
-		}
-
-		// Same type → sort by name
-		return entries[i].Name() < entries[j].Name()
-	})
 }

@@ -1,4 +1,4 @@
-package selectorHandler
+package selectors
 
 import (
 	"fmt"
@@ -14,15 +14,15 @@ import (
 	_ "github.com/Shopify/go-lua"
 )
 
-type LuaSelectorHandler struct {
+type LuaSelector struct {
 	svrInfoProvider core.IServerInfoViewProvider
 }
 
-func NewLuaSelectorHandler(svrInfoProvider core.IServerInfoViewProvider) ISelectorHandler {
-	return &LuaSelectorHandler{svrInfoProvider: svrInfoProvider}
+func NewLuaSelector(svrInfoProvider core.IServerInfoViewProvider) ISelector {
+	return &LuaSelector{svrInfoProvider: svrInfoProvider}
 }
 
-func (s *LuaSelectorHandler) Select(ctx *core.RequestContext) (*SelectResult, error) {
+func (s *LuaSelector) Select(ctx *core.RequestContext) (*SelectResult, error) {
 	scriptPath := filepath.Join(ctx.Request.RootDir, ctx.Request.Selector)
 	if !utility.FileExists(scriptPath) {
 		return &SelectResult{Handled: false}, nil
@@ -37,7 +37,7 @@ func (s *LuaSelectorHandler) Select(ctx *core.RequestContext) (*SelectResult, er
 	return &SelectResult{Handled: true}, nil
 }
 
-func (s *LuaSelectorHandler) initLua(ctx *core.RequestContext) *lua.State {
+func (s *LuaSelector) initLua(ctx *core.RequestContext) *lua.State {
 	l := lua.NewState()
 	lua.OpenLibraries(l)
 	_ = s.redirectLuaPrint(l, ctx.Request.Conn)
@@ -47,7 +47,7 @@ func (s *LuaSelectorHandler) initLua(ctx *core.RequestContext) *lua.State {
 	return l
 }
 
-func (s *LuaSelectorHandler) redirectLuaPrint(l *lua.State, w io.Writer) *error {
+func (s *LuaSelector) redirectLuaPrint(l *lua.State, w io.Writer) *error {
 	var writeErr error
 
 	l.Register("print", func(l *lua.State) int {
@@ -86,7 +86,7 @@ func (s *LuaSelectorHandler) redirectLuaPrint(l *lua.State, w io.Writer) *error 
 	return &writeErr
 }
 
-func (s *LuaSelectorHandler) registerFileReader(l *lua.State) {
+func (s *LuaSelector) registerFileReader(l *lua.State) {
 	l.Register("read_file", func(l *lua.State) int {
 		filename := lua.CheckString(l, 1)
 
@@ -102,7 +102,7 @@ func (s *LuaSelectorHandler) registerFileReader(l *lua.State) {
 	})
 }
 
-func (s *LuaSelectorHandler) pushStruct(l *lua.State, value any) {
+func (s *LuaSelector) pushStruct(l *lua.State, value any) {
 	v := reflect.ValueOf(value)
 	if v.Kind() == reflect.Pointer {
 		v = v.Elem()

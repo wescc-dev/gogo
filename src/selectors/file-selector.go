@@ -1,4 +1,4 @@
-package selectorHandler
+package selectors
 
 import (
 	"fmt"
@@ -8,15 +8,15 @@ import (
 	"path/filepath"
 )
 
-type FileSelectorHandler struct {
+type FileSelector struct {
 	svrInfoProvider core.IServerInfoViewProvider
 }
 
-func NewFileSelectorHandler(svrInfoProvider core.IServerInfoViewProvider) ISelectorHandler {
-	return &FileSelectorHandler{svrInfoProvider: svrInfoProvider}
+func NewFileSelector(svrInfoProvider core.IServerInfoViewProvider) ISelector {
+	return &FileSelector{svrInfoProvider: svrInfoProvider}
 }
 
-func (s *FileSelectorHandler) Select(ctx *core.RequestContext) (*SelectResult, error) {
+func (s *FileSelector) Select(ctx *core.RequestContext) (*SelectResult, error) {
 	result := &SelectResult{false}
 	filePath := filepath.Join(ctx.Request.RootDir, ctx.Request.Selector)
 	// If it's a file
