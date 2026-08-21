@@ -10,5 +10,5 @@ func ContextLog(ctx *RequestContext, v ...any) {
 }
 
 func SystemLog(v ...any) {
-	log.Println(append([]any{"GoGopher:"}, v...)...)
+	log.Println(append([]any{"GoGo:"}, v...)...)
 }
