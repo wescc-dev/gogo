@@ -77,7 +77,7 @@ func waitForShutdownSignal() chan os.Signal {
 }
 
 func parseFlags() {
-	info := pflag.BoolP("info", "?", false, "Show server info")
+	info := pflag.Bool("info", false, "Show server info")
 	title := pflag.StringP("title", "t", cfg.Title, "Server title")
 	hostName := pflag.StringP("hostname", "h", cfg.HostName, "Server hostname")
 	hostBindAddress := pflag.StringP("bind", "b", cfg.BindAddress, "Server bind address")
