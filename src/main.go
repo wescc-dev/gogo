@@ -77,20 +77,29 @@ func waitForShutdownSignal() chan os.Signal {
 }
 
 func parseFlags() {
-	info := pflag.Bool("info", false, "Show server info")
+	help := pflag.BoolP("help", "h", false, "Show help")
+	info := pflag.BoolP("info", "i", false, "Show server info")
+	config := pflag.BoolP("config", "c", false, "Show server configuration")
 	title := pflag.StringP("title", "t", cfg.Title, "Server title")
-	hostName := pflag.StringP("hostname", "h", cfg.HostName, "Server hostname")
+	hostName := pflag.StringP("hostname", "n", cfg.HostName, "Server hostname")
 	hostBindAddress := pflag.StringP("bind", "b", cfg.BindAddress, "Server bind address")
 	port := pflag.StringP("port", "p", cfg.Port, "Server port")
 	gopherRoot := pflag.StringP("gopher-root", "r", cfg.GopherRoot, "Gopher root directory")
 	firewallConfigFile := pflag.StringP("firewall-config", "f", cfg.FireWallConfigFile, "Firewall configuration file")
 	fileAccessConfigFile := pflag.StringP("file-access-config", "a", cfg.FileAccessConfigFile, "File access configuration file")
-	itemTypeConfigFile := pflag.StringP("item-type-config", "i", cfg.ItemTypeConfigFile, "Item type configuration file")
+	itemTypeConfigFile := pflag.StringP("item-type-config", "g", cfg.ItemTypeConfigFile, "Item type configuration file")
 	requestTimeout := pflag.StringP("request-timeout", "o", cfg.RequestTimeoutDuration.String(), "Request timeout duration")
 	requestMaximumBytes := pflag.IntP("request-maximum-bytes", "m", cfg.RequestMaximumBytes, "Request maximum bytes")
 	pflag.Parse()
 	if *info {
 		printInfo()
+		os.Exit(0)
+	}
+	if *config {
+		printConfiguration()
+		os.Exit(0)
+	}
+	if *help {
 		pflag.Usage()
 		os.Exit(0)
 	}

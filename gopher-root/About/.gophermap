@@ -1,12 +1,12 @@
-i{{TITLE}}	TITLE	error.host	1
-iHost: {{HOST}}:{{PORT}}		error.host	1
-iSecure: {{TLS_ENABLED}}		error.host	1
-iServer startup: {{START_TIME}}		error.host	1
-iUptime: {{UPTIME}}		error.host	1
-iYour IP: {{CLIENT_IP_ADDRESS}}		error.host	1
-iConnections: {{CURRENT_CONNECTIONS}}		error.host	1
-iTotal connections since startup: {{TOTAL_CONNECTIONS}}		error.host	1
-iServer: {{SERVER}}		error.host	1
-iRunning on {{OS}}/{{ARCH}} with {{CPUS}} cores		error.host	1
-i{{=}}		error.host	1
-{{ENTRIES}}
+i{{ .SvrInfo.Title}}	TITLE	error.host	1
+iHost: {{ .SvrInfo.HostName }}:{{ .SvrInfo.Port }}		error.host	1
+iCurrent Connections: {{ .SvrInfo.CurrentConnections }}		error.host	1
+iTotal Connections: {{ .SvrInfo.TotalConnections }}		error.host	1
+iStart Time: {{ .SvrInfo.StartTime }}		error.host	1
+iUp Time: {{ .SvrInfo.Uptime }}		error.host	1
+iServer: {{ .SvrInfo.ServerSoftwareName }} {{ .SvrInfo.ServerSoftwareVersion }} {{ .SvrInfo.ServerSoftwareCopyright }}		error.host	1
+iRunning on {{ .SvrInfo.OS }}/{{ .SvrInfo.Architecture }} with {{ .SvrInfo.NumCpus}} cores		error.host	1
+i========================================================		error.host	1
+{{ range .Entries }}
+{{ . }}
+{{ end }}

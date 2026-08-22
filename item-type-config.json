@@ -1,5 +1,5 @@
 {
-  "pictogramsEnabled": false,
+  "pictogramsEnabled": true,
   "defaultItemType": {"itemType":"9", "pictogram":"⚙︎"},
   "itemsTypes": [
     {

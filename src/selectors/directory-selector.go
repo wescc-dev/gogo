@@ -1,16 +1,14 @@
 package selectors
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"gogo/src/configuration"
 	"gogo/src/core"
 	"gogo/src/utility"
-	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -124,31 +122,41 @@ func (d *DirectorySelector) generateGopherMap(ctx *core.RequestContext, svrInfo 
 		}
 	}
 	gophermapTemplatePath := filepath.Join(dirPath, svrInfo.GophermapTemplateName)
-	templateBytes, templateErr := os.ReadFile(gophermapTemplatePath)
-	if templateErr != nil {
-		return fmt.Errorf("cannot open .gophermap: %w", templateErr)
-	}
-	templateContent := string(templateBytes)
 
-	// Replace Tokens
-	if content, err := d.replaceSingleTokens(ctx.Request.Conn, svrInfo, templateContent); err != nil {
-		return fmt.Errorf("cannot replace tokens: %w", err)
+	if tmpl, err := template.ParseFiles(gophermapTemplatePath); err != nil {
+		return fmt.Errorf("cannot parse gophermap template: %w", err)
 	} else {
-		templateContent = content
+		entries, err := readDirFiltered(dirPath)
+		if err != nil {
+			return fmt.Errorf("cannot read gopher root: %w", err)
+		}
+		sortDirectoryEntries(entries)
+		var selectors []string
+		for _, e := range entries {
+			if s, err := buildGopherEntry(e, strings.TrimPrefix(dirPath, svrInfo.GopherRoot), svrInfo.HostName, svrInfo.Port); err != nil {
+				core.ContextLog(ctx, err)
+				continue
+			} else {
+				if s != "" {
+					selectors = append(selectors, s)
+				}
+			}
+		}
+		data := &struct {
+			SvrInfo core.ServerInfoView
+			Entries []string
+		}{
+			SvrInfo: svrInfo,
+			Entries: selectors,
+		}
+		if err := tmpl.Execute(ctx.Request.Conn, data); err != nil {
+			return fmt.Errorf("cannot execute gophermap template: %w", err)
+		}
 	}
-
-	// Replace {{ENTRIES}} with directory entries
-	if content, err := d.replaceDirectoryEntriesToken(ctx, dirPath, templateContent); err != nil {
-		return fmt.Errorf("cannot replace directory entries token: %w", err)
-	} else {
-		templateContent = content
-	}
-
-	// Add the footer
-	templateContent = d.addFooter(templateContent)
 
 	// Write the gophermap
-	if _, err := ctx.Request.Conn.Write([]byte(templateContent)); err != nil {
+	m, _ := configuration.GetMetadata()
+	if _, err := ctx.Request.Conn.Write([]byte(m.Footer)); err != nil {
 		return fmt.Errorf("cannot write gophermap: %w", err)
 	}
 	return nil
@@ -158,72 +166,4 @@ func (d *DirectorySelector) addFooter(templateContent string) string {
 	m, _ := configuration.GetMetadata()
 	templateContent += m.Footer
 	return templateContent
-}
-
-func (d *DirectorySelector) replaceDirectoryEntriesToken(ctx *core.RequestContext, dirPath string, content string) (string, error) {
-	// Now handle {{ENTRIES}}
-	entries, err := d.generateEntries(ctx, dirPath)
-	if err != nil {
-		return content, err
-	}
-	// Replace tokens
-	content = strings.ReplaceAll(content, "{{ENTRIES}}", entries)
-	return content, nil
-}
-
-func (d *DirectorySelector) replaceSingleTokens(conn net.Conn, svrInfo core.ServerInfoView, content string) (string, error) {
-	clientIP, _, err := net.SplitHostPort(conn.RemoteAddr().String())
-	if err != nil {
-		return content, err
-	}
-	tls := "No"
-	if svrInfo.TLSEnabled {
-		tls = "Yes (TLS certificate is valid)"
-	}
-
-	// Replace simple tokens first
-	tokens := map[string]string{
-		"TITLE":               svrInfo.Title,
-		"HOST":                svrInfo.HostName,
-		"PORT":                svrInfo.Port,
-		"TLS_ENABLED":         fmt.Sprintf("%s", tls),
-		"CLIENT_IP_ADDRESS":   clientIP,
-		"SERVER":              svrInfo.ServerSoftwareName + " (" + svrInfo.ServerSoftwareVersion + ") " + svrInfo.ServerSoftwareLicense,
-		"START_TIME":          svrInfo.StartTime.Format(time.RFC3339),
-		"UPTIME":              utility.FormatDuration(svrInfo.Uptime),
-		"CURRENT_CONNECTIONS": fmt.Sprintf("%d", svrInfo.CurrentConnections),
-		"TOTAL_CONNECTIONS":   fmt.Sprintf("%d", svrInfo.TotalConnections),
-		"OS":                  svrInfo.OS,
-		"ARCH":                svrInfo.Architecture,
-		"CPUS":                fmt.Sprintf("%d", svrInfo.NumCpus),
-		"=":                   "======================================================================",
-		"*":                   "**********************************************************************",
-		"-":                   "----------------------------------------------------------------------",
-	}
-
-	for key, val := range tokens {
-		content = strings.ReplaceAll(content, "{{"+key+"}}", val)
-	}
-	return content, nil
-}
-
-func (d *DirectorySelector) generateEntries(ctx *core.RequestContext, dirPath string) (string, error) {
-	entries, err := readDirFiltered(dirPath)
-	if err != nil {
-		return "", fmt.Errorf("cannot read gopher root: %w", err)
-	}
-	sortDirectoryEntries(entries)
-	var entriesBuf bytes.Buffer
-	w := bufio.NewWriter(&entriesBuf)
-	svrInfo := d.svrInfoViewProvider.GetCurrentServerInfo()
-	for _, e := range entries {
-		if s, err := buildGopherEntry(e, strings.TrimPrefix(dirPath, svrInfo.GopherRoot), svrInfo.HostName, svrInfo.Port); err != nil {
-			core.ContextLog(ctx, err)
-			continue
-		} else {
-			_, _ = w.WriteString(s)
-		}
-	}
-	_ = w.Flush()
-	return entriesBuf.String(), nil
 }
