@@ -1,4 +1,4 @@
-![GoGo](gogo-logo-1220x352.png)
+![GoGo](gogo-logo.png)
 
 An effective **Gopher server** written in Go by Wes C.
 
