@@ -30,7 +30,8 @@ https://github.com/wescc-dev/gogo
 ```
 
 1. Install the latest Go SDK from https://golang.com
-2. Build
+2. Clone the repository to your local machine
+3. Build
 
 ```
 go build -o gogo ./src
@@ -44,11 +45,42 @@ go build -o gogo ./src
 
 ## Configure
 
-Configure environment variables and firewall.
+The GoGo server is configured with environment variables and/or command line flags.
+
+***Important:***
+
+- The command line flags take precedence over environment variables.
+- Environment variables take precedence over the .env file.
+
+1. The .env file is read first if it exists.
+2. EXPORTED environment variables are read next, overriding any values in the .env
+3. Command line flags override any values set in the .env or exported environment variables.
+
+### Command Line Flags
+
+| Flag | Long Flag               | Type   | Description                    | Default                      |
+|------|-------------------------|--------|--------------------------------|------------------------------|
+| -b   | --bind                  | string | Server bind address            | 0.0.0.0                      |
+| -a   | --file-access-config    | string | File access configuration file | file-access-config.json      |
+| -f   | --firewall-config       | string | Firewall configuration file    | firewall-config.json         |
+| -r   | --gopher-root           | string | Gopher root directory          | gopher-root                  |
+| -h   | --hostname              | string | Server hostname                | localhost                    |
+|      | --info                  | bool   | Show this help                 | (none)                       |
+| -i   | --item-type-config      | string | Item type configuration file   | item-type-config.json        |
+| -p   | --port                  | string | Server port                    | 70                           |
+| -m   | --request-maximum-bytes | int    | Request maximum bytes          | 1024                         |
+| -o   | --request-timeout       | string | Request timeout duration       | 30s                          |
+| -t   | --title                 | string | Server title                   | Wes C's Official Gopher Hole |
+
 
 ### Environment Variables
 
-Reasonable default environment variables are in the .env file. You can edit this file or export environment variables in the shell used to run GoGo. EXPORTED environments, including those you set in your IDE or Docker container, will take precedent over the .env file.
+### .env File
+
+Reasonable default environment variables are in the .env file, but you will
+want to edit this file for your environment.
+
+EXPORTED environments, including those you set in your IDE or Docker container, will take precedent over the .env file.
 
 ```
 TITLE="Wes C's Official Gopher Hole"
@@ -148,39 +180,48 @@ serve a dynamically generated gophermap if there isn't a file named *gophermap* 
 
 GoGo generates the gophermap dynamically by substituting *tokens* with the values of variables dynamically.
 
-| Token                   | Value Source                                                                                      |
-|-------------------------|---------------------------------------------------------------------------------------------------|
-| {{TITLE}}               | TITLE Environment Variable                                                                        |
-| {{HOST}}                | Host name of the server                                                                           |
-| {{PORT}                 | The port the host is lisenting on (70 by default)                                                 |
-| {{TLS_ENABLED}}         | Whether or not TLS enabled on the server                                                          |
-| {{CLIENT_IP_ADDRESS}}   | The IP Adress of the connected client                                                             |
-| {{SERVER}}              | Information about the GoGo server running on the system                                       |
-| {{START_TIME}}          | The date/time the server started                                                                  |
-| {{UPTIME}}              | The duration that the server has been up and running                                              |
-| {{CURRENT_CONNECTIONS}} | The number of connections currently being served. (>1 will be very rare)                          |
-| {{TOTAL_CONNECTIONS}}   | Total number of connections the server has handled since it started up. (Not a persistent total.) |
-| {{OS}}                  | The operating system of the server                                                                |
-| {{ARCH}}                | The servers CPU architectire                                                                      |
-| {{CPUS}}                | The number of CPUS/Cores on the server                                                            |
-| {{ENTRIES}}             | Selectors for the contents of the directory                                                       |
-| {{=}}, {{-}}, {{*}}     | A decorative line of =, *, or - characters, primarily for dividers.                               |
+```
+SvrInfo  {
+    Title                   string
+    HostName                string
+    Port                    string
+    TLSEnabled              bool
+    Uptime                  time.Duration
+    StartTime               time.Time
+    CurrentConnections      int
+    TotalConnections        int
+    OS                      string
+    Architecture            string
+    NumCpus                 int
+    GopherRoot              string
+    GophermapTemplateName   string
+    ServerSoftwareName      string
+    ServerSoftwareVersion   string
+    ServerSoftwareCopyright string
+    ServerSoftwareLicense   string
+}
+```
 
-There are some examples of .gophermap templates in the *gophermap-templates* directory.
+**Note: There are some examples of .gophermap templates in the *gophermap-templates* directory.**
 
 ## Special Files and Directories
 
 ### Hidden Files and Directories
-Any file or directory beginning with $ is considered hidden, and will not have selectors generated for it by .gophermap templates or raw directory lists.
+Any file or directory beginning with $ is considered hidden and will not have selectors generated for it by .gophermap templates or raw directory lists.
 
 Hidden files and directories are available only by direct selectors.
 
 *Users must know and use the direct selector to access hidden files and directories.*
 
+Any file or directory beginning with a period (.) is considered hidden and unservable  and will not have selectors generated for it by .gophermap templates or raw directory lists, nor will it be accessible by direct selectors.
+
+**Note: Edit the file-access-config.json file to change the default access rules.**
+
 ### Lua Scripts
 
 Lua scripts are supported for dynamic content. Files with a .lua extension are executed when the directory is accessed.
-The script is passed a server object with context information. 
+
+The script is passed a SvrInfo object with context information.
 Lua's **print** function is used to output the content to the client.
 
 ## Docker

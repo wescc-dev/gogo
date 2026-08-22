@@ -136,7 +136,7 @@ func sortDirectoryEntries(entries []os.DirEntry) {
 		iIsDir := entries[i].IsDir()
 		jIsDir := entries[j].IsDir()
 
-		// Directories first
+		// Directories last
 		if iIsDir != jIsDir {
 			return !iIsDir
 		}
