@@ -68,7 +68,7 @@ The GoGo server is configured with environment variables and/or command line fla
 | -i   | --info                  | bool   | Show Server Info               | (none)                       |
 | -c   | --config                | bool   | Show Server Configuration      |                              |
 | -h   | --help                  | bool   | Show help                      |                              |
-| -t   | --item-type-config      | string | Item type configuration file   | item-type-config.json        |
+| -g   | --item-type-config      | string | Item type configuration file   | item-type-config.json        |
 | -p   | --port                  | string | Server port                    | 70                           |
 | -m   | --request-maximum-bytes | int    | Request maximum bytes          | 1024                         |
 | -o   | --request-timeout       | string | Request timeout duration       | 30s                          |

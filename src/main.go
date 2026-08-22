@@ -87,7 +87,7 @@ func parseFlags() {
 	gopherRoot := pflag.StringP("gopher-root", "r", cfg.GopherRoot, "Gopher root directory")
 	firewallConfigFile := pflag.StringP("firewall-config", "f", cfg.FireWallConfigFile, "Firewall configuration file")
 	fileAccessConfigFile := pflag.StringP("file-access-config", "a", cfg.FileAccessConfigFile, "File access configuration file")
-	itemTypeConfigFile := pflag.StringP("item-type-config", "t", cfg.ItemTypeConfigFile, "Item type configuration file")
+	itemTypeConfigFile := pflag.StringP("item-type-config", "g", cfg.ItemTypeConfigFile, "Item type configuration file")
 	requestTimeout := pflag.StringP("request-timeout", "o", cfg.RequestTimeoutDuration.String(), "Request timeout duration")
 	requestMaximumBytes := pflag.IntP("request-maximum-bytes", "m", cfg.RequestMaximumBytes, "Request maximum bytes")
 	pflag.Parse()
