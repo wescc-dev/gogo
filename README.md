@@ -64,9 +64,11 @@ The GoGo server is configured with environment variables and/or command line fla
 | -a   | --file-access-config    | string | File access configuration file | file-access-config.json      |
 | -f   | --firewall-config       | string | Firewall configuration file    | firewall-config.json         |
 | -r   | --gopher-root           | string | Gopher root directory          | gopher-root                  |
-| -h   | --hostname              | string | Server hostname                | localhost                    |
-|      | --info                  | bool   | Show this help                 | (none)                       |
-| -i   | --item-type-config      | string | Item type configuration file   | item-type-config.json        |
+| -n   | --hostname              | string | Server hostname                | localhost                    |
+| -i   | --info                  | bool   | Show Server Info               | (none)                       |
+| -c   | --config                | bool   | Show Server Configuration      |                              |
+| -h   | --help                  | bool   | Show help                      |                              |
+| -t   | --item-type-config      | string | Item type configuration file   | item-type-config.json        |
 | -p   | --port                  | string | Server port                    | 70                           |
 | -m   | --request-maximum-bytes | int    | Request maximum bytes          | 1024                         |
 | -o   | --request-timeout       | string | Request timeout duration       | 30s                          |
