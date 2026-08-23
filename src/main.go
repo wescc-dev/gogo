@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gogo/src/configuration"
 	"gogo/src/core"
+	"gogo/src/docgen"
 	"gogo/src/middleware"
 	"gogo/src/server"
 	"gogo/src/utility"
@@ -77,6 +78,8 @@ func waitForShutdownSignal() chan os.Signal {
 }
 
 func parseFlags() {
+	doc := pflag.Bool("doc", false, "")
+
 	help := pflag.BoolP("help", "h", false, "Show help")
 	info := pflag.BoolP("info", "i", false, "Show server info")
 	config := pflag.BoolP("config", "c", false, "Show server configuration")
@@ -90,7 +93,18 @@ func parseFlags() {
 	itemTypeConfigFile := pflag.StringP("item-type-config", "g", cfg.ItemTypeConfigFile, "Item type configuration file")
 	requestTimeout := pflag.StringP("request-timeout", "o", cfg.RequestTimeoutDuration.String(), "Request timeout duration")
 	requestMaximumBytes := pflag.IntP("request-maximum-bytes", "m", cfg.RequestMaximumBytes, "Request maximum bytes")
+	pflag.CommandLine.ParseErrorsAllowlist = pflag.ParseErrorsAllowlist{
+		UnknownFlags: true,
+	}
+
 	pflag.Parse()
+	if *doc {
+		err := docgen.MarkdownToHTML("README.md")
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}
 	if *info {
 		printInfo()
 		os.Exit(0)
