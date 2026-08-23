@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"gogo/src/configuration"
 	"gogo/src/core"
-	"gogo/src/docgen"
 	"gogo/src/middleware"
 	"gogo/src/server"
 	"gogo/src/utility"
@@ -78,8 +77,6 @@ func waitForShutdownSignal() chan os.Signal {
 }
 
 func parseFlags() {
-	doc := pflag.Bool("doc", false, "")
-
 	help := pflag.BoolP("help", "h", false, "Show help")
 	info := pflag.BoolP("info", "i", false, "Show server info")
 	config := pflag.BoolP("config", "c", false, "Show server configuration")
@@ -98,13 +95,6 @@ func parseFlags() {
 	}
 
 	pflag.Parse()
-	if *doc {
-		err := docgen.MarkdownToHTML("README.md")
-		if err != nil {
-			log.Fatal(err)
-		}
-		os.Exit(0)
-	}
 	if *info {
 		printInfo()
 		os.Exit(0)
