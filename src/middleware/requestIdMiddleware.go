@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func AddRequestId(svr core.IServer) {
+func AddRequestId(svr core.Server) {
 	svr.AddMiddleware(requestIdMiddleware)
 }
 

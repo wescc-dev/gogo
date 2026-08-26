@@ -15,10 +15,10 @@ import (
 )
 
 type LuaSelector struct {
-	svrInfoProvider core.IServerInfoViewProvider
+	svrInfoProvider core.IServerInfoProvider
 }
 
-func NewLuaSelector(svrInfoProvider core.IServerInfoViewProvider) ISelector {
+func NewLuaSelector(svrInfoProvider core.IServerInfoProvider) Selector {
 	return &LuaSelector{svrInfoProvider: svrInfoProvider}
 }
 

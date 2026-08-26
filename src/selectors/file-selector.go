@@ -9,10 +9,10 @@ import (
 )
 
 type FileSelector struct {
-	svrInfoProvider core.IServerInfoViewProvider
+	svrInfoProvider core.IServerInfoProvider
 }
 
-func NewFileSelector(svrInfoProvider core.IServerInfoViewProvider) ISelector {
+func NewFileSelector(svrInfoProvider core.IServerInfoProvider) Selector {
 	return &FileSelector{svrInfoProvider: svrInfoProvider}
 }
 

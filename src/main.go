@@ -30,7 +30,7 @@ func main() {
 
 }
 
-func startServer() core.IServer {
+func startServer() core.Server {
 	log.Println("Starting server...")
 	var svr, err = server.NewServer(
 		cfg.Title,
@@ -42,24 +42,23 @@ func startServer() core.IServer {
 		cfg.RequestMaximumBytes,
 		cfg.TLSCertFile,
 		cfg.TLSKeyFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if svr != nil {
 		middleware.AddRequestId(svr)
 		middleware.AddFirewallMiddleware(svr)
 	}
-	if err != nil {
+	if err := svr.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
-	if err := svr.Start(); err != nil {
-		log.Fatal(err)
-	}
-
 	return svr
 }
 
-func stopServer(svr core.IServer) error {
+func stopServer(svr core.Server) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	var err = svr.Stop(ctx)
+	var err = svr.Shutdown(ctx)
 	if err != nil {
 		log.Println(err)
 	}

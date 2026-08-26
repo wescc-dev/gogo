@@ -60,7 +60,7 @@ func writeBannerToConn(conn net.Conn, timeOut time.Duration) error {
 	if err != nil {
 		return err
 	}
-	if _, err := conn.Write([]byte(m.AppName)); err != nil {
+	if _, err := conn.Write([]byte(m.Footer)); err != nil {
 		return err
 	}
 	return nil

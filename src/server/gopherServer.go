@@ -13,6 +13,7 @@ import (
 	"net"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -40,7 +41,7 @@ type gopherServer struct {
 	stopTime         time.Time
 	totalConnections int
 
-	selectors       []selectors.ISelector
+	selectors       []selectors.Selector
 	mu              sync.Mutex
 	listener        net.Listener
 	conns           map[net.Conn]struct{}
@@ -59,7 +60,7 @@ func NewServer(
 	requestTimeoutDuration time.Duration,
 	requestMaximumBytea int,
 	tlsCertFile string,
-	tlsKeyFile string) (core.IServer, error) {
+	tlsKeyFile string) (core.Server, error) {
 
 	if strings.TrimSpace(hostname) == "" {
 		hostname = "localhost"
@@ -88,14 +89,14 @@ func NewServer(
 		RequestTimeoutDuration: requestTimeoutDuration,
 		RequestMaximumBytes:    requestMaximumBytea,
 		Middlewares:            []core.Middleware{},
-		selectors:              []selectors.ISelector{},
+		selectors:              []selectors.Selector{},
 		clientWaitGroup:        sync.WaitGroup{},
 		acceptDone:             make(chan struct{}),
 		stopRequested:          false,
 	}, nil
 }
 
-func (s *gopherServer) Start() error {
+func (s *gopherServer) ListenAndServe() error {
 	address := s.BindAddr + ":" + s.Port
 	var ln net.Listener
 	var err error
@@ -119,9 +120,10 @@ func (s *gopherServer) Start() error {
 
 	s.mu.Lock()
 	s.Handler = s.useMiddleware(s.serveSelector)
-	s.selectors = []selectors.ISelector{
+	s.selectors = []selectors.Selector{
 		selectors.NewDirectorySelector(s),
 		selectors.NewLuaSelector(s),
+		selectors.NewTemplateSelector(s),
 		selectors.NewFileSelector(s)}
 	s.listener = ln
 	s.conns = make(map[net.Conn]struct{})
@@ -142,7 +144,7 @@ func (s *gopherServer) IsStarted() bool {
 	return s.listener != nil
 }
 
-func (s *gopherServer) Stop(ctx context.Context) error {
+func (s *gopherServer) Shutdown(ctx context.Context) error {
 	s.stopOnce.Do(func() {
 		core.SystemLog("Shutting down server...")
 		s.mu.Lock()
@@ -183,10 +185,11 @@ func (s *gopherServer) Stop(ctx context.Context) error {
 		return nil
 	}
 }
-func (s *gopherServer) GetCurrentServerInfo() core.ServerInfoView {
+
+func (s *gopherServer) GetCurrentServerInfo() core.ServerInfo {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return core.ServerInfoView{
+	return core.ServerInfo{
 		Title:                   s.Title,
 		HostName:                s.Hostname,
 		Port:                    s.Port,
@@ -244,8 +247,8 @@ func (s *gopherServer) untrackConn(c net.Conn) {
 }
 
 func (s *gopherServer) useMiddleware(h core.HandlerFunc) core.HandlerFunc {
-	for i := len(s.Middlewares) - 1; i >= 0; i-- {
-		h = s.Middlewares[i](h)
+	for _, v := range slices.Backward(s.Middlewares) {
+		h = v(h)
 	}
 	return h
 }

@@ -2,22 +2,19 @@ package selectors
 
 import (
 	"fmt"
-	"gogo/src/configuration"
 	"gogo/src/core"
 	"gogo/src/utility"
 	"os"
 	"path/filepath"
-	"strings"
-	"text/template"
 	"time"
 )
 
 // DirectorySelector handles directory selectors
 type DirectorySelector struct {
-	svrInfoViewProvider core.IServerInfoViewProvider
+	svrInfoViewProvider core.IServerInfoProvider
 }
 
-func NewDirectorySelector(svrInfoViewProvider core.IServerInfoViewProvider) ISelector {
+func NewDirectorySelector(svrInfoViewProvider core.IServerInfoProvider) Selector {
 	return &DirectorySelector{
 		svrInfoViewProvider: svrInfoViewProvider,
 	}
@@ -46,11 +43,22 @@ func (d *DirectorySelector) serveDirectory(ctx *core.RequestContext, selectorPat
 	if err != nil {
 		return err
 	}
-	if done {
-		return nil
+	if !done {
+		err = d.writeDirectoryListing(ctx, selectorPath, selector, timeOut, err)
+		if err != nil {
+			return err
+		}
 	}
 
-	// Otherwise list directory
+	err = writeBannerToConn(ctx.Request.Conn, timeOut)
+	if err != nil {
+		return err
+	}
+	writeTerminationMarker(ctx.Request.Conn)
+	return nil
+}
+
+func (d *DirectorySelector) writeDirectoryListing(ctx *core.RequestContext, selectorPath string, selector string, timeOut time.Duration, err error) error {
 	entries, err := readDirFiltered(selectorPath)
 	svrInfo := d.svrInfoViewProvider.GetCurrentServerInfo()
 	if err != nil {
@@ -75,6 +83,8 @@ func (d *DirectorySelector) serveDirectory(ctx *core.RequestContext, selectorPat
 				if err = ctx.Request.Conn.SetWriteDeadline(time.Now().Add(timeOut)); err != nil {
 					return err
 				}
+				core.ContextLog(ctx, gopherEntry)
+
 				if _, err := ctx.Request.Conn.Write([]byte(gopherEntry)); err != nil {
 					core.ContextLog(ctx, err)
 					return err
@@ -82,11 +92,6 @@ func (d *DirectorySelector) serveDirectory(ctx *core.RequestContext, selectorPat
 			}
 		}
 	}
-	err = writeBannerToConn(ctx.Request.Conn, timeOut)
-	if err != nil {
-		return err
-	}
-	writeTerminationMarker(ctx.Request.Conn)
 	return nil
 }
 
@@ -104,6 +109,7 @@ func (d *DirectorySelector) serveGopherMap(ctx *core.RequestContext, selectorPat
 			return false, fmt.Errorf("cannot serve gophermap: %w", err)
 		}
 		return true, nil
+
 	} else if gopherMapTemplateExists {
 		err := d.generateGopherMap(ctx, svrInfo, selectorPath)
 		if err != nil {
@@ -111,59 +117,19 @@ func (d *DirectorySelector) serveGopherMap(ctx *core.RequestContext, selectorPat
 		}
 		core.ContextLog(ctx, "Generated gophermap for:", selectorPath)
 		return true, nil
+
 	}
 	return false, nil
 }
 
-func (d *DirectorySelector) generateGopherMap(ctx *core.RequestContext, svrInfo core.ServerInfoView, dirPath string) error {
+func (d *DirectorySelector) generateGopherMap(ctx *core.RequestContext, svrInfo core.ServerInfo, dirPath string) error {
 	if info, err := os.Stat(svrInfo.GopherRoot); !(err == nil && info.IsDir()) {
 		if err := os.MkdirAll(svrInfo.GopherRoot, os.ModePerm); err != nil {
 			return fmt.Errorf("GopherRoot %s does not exist and could not be created. No files will be served", svrInfo.GopherRoot)
 		}
 	}
-	gophermapTemplatePath := filepath.Join(dirPath, svrInfo.GophermapTemplateName)
+	templatePath := filepath.Join(dirPath, svrInfo.GophermapTemplateName)
 
-	if tmpl, err := template.ParseFiles(gophermapTemplatePath); err != nil {
-		return fmt.Errorf("cannot parse gophermap template: %w", err)
-	} else {
-		entries, err := readDirFiltered(dirPath)
-		if err != nil {
-			return fmt.Errorf("cannot read gopher root: %w", err)
-		}
-		sortDirectoryEntries(entries)
-		var selectors []string
-		for _, e := range entries {
-			if s, err := buildGopherEntry(e, strings.TrimPrefix(dirPath, svrInfo.GopherRoot), svrInfo.HostName, svrInfo.Port); err != nil {
-				core.ContextLog(ctx, err)
-				continue
-			} else {
-				if s != "" {
-					selectors = append(selectors, s)
-				}
-			}
-		}
-		data := &struct {
-			SvrInfo core.ServerInfoView
-			Entries []string
-		}{
-			SvrInfo: svrInfo,
-			Entries: selectors,
-		}
-		if err := tmpl.Execute(ctx.Request.Conn, data); err != nil {
-			return fmt.Errorf("cannot execute gophermap template: %w", err)
-		}
-	}
-
-	// Write the gophermap
-	m, _ := configuration.GetMetadata()
-	if _, err := ctx.Request.Conn.Write([]byte(m.Footer)); err != nil {
-		return fmt.Errorf("cannot write gophermap: %w", err)
-	}
-	return nil
-}
-
-func (d *DirectorySelector) addFooter(templateContent string) string {
-	m, _ := configuration.GetMetadata()
-	templateContent += m.Footer
-	return templateContent
+	err := ProcessTemplate(ctx, svrInfo, dirPath, templatePath)
+	return err
 }

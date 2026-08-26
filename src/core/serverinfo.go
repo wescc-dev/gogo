@@ -2,7 +2,7 @@ package core
 
 import "time"
 
-type ServerInfoView struct {
+type ServerInfo struct {
 	Title                   string
 	HostName                string
 	Port                    string
@@ -22,6 +22,6 @@ type ServerInfoView struct {
 	ServerSoftwareLicense   string
 }
 
-type IServerInfoViewProvider interface {
-	GetCurrentServerInfo() ServerInfoView
+type IServerInfoProvider interface {
+	GetCurrentServerInfo() ServerInfo
 }

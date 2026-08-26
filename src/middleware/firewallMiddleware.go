@@ -11,7 +11,7 @@ import (
 var cfg = configuration.GetConfiguration()
 var fw, firewallError = security.NewFireWall(cfg.FireWallConfigFile)
 
-func AddFirewallMiddleware(svr core.IServer) {
+func AddFirewallMiddleware(svr core.Server) {
 	if firewallError != nil {
 		log.Fatal("Error loading firewall configuration: ", firewallError)
 	}
