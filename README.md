@@ -98,6 +98,9 @@ FILE_ACCESS_CONFIG_FILE=file-access-config.json
 ITEM_TYPE_CONFIG_FILE=item-type-config.json
 REQUEST_TIMEOUT_SECONDS=30
 REQUEST_MAXIMUM_BYTES=1024
+GOPHERMAP_TEMPLATE_NAME=.gophermap
+TEMPLATE_FILE_EXTENSION=.tmpl
+LUA_FILE_EXTENSION=.lua
 ```
 
 - **TITLE** is the name of your gopher hole. It is only displayed in the gophermap generated from the .gophermap in the GOPHER_ROOT directory.
@@ -197,7 +200,9 @@ SvrInfo  {
     Architecture            string
     NumCpus                 int
     GopherRoot              string
-    GophermapTemplateName   string
+	GophermapTemplateName   string
+	TemplateFileExtension   string
+	LuaScriptFileExtension  string
     ServerSoftwareName      string
     ServerSoftwareVersion   string
     ServerSoftwareCopyright string
@@ -210,6 +215,7 @@ SvrInfo  {
 ## Special Files and Directories
 
 ### Hidden Files and Directories
+
 Any file or directory beginning with $ is considered hidden and will not have selectors generated for it by .gophermap templates or raw directory lists.
 
 Hidden files and directories are available only by direct selectors.
@@ -219,6 +225,12 @@ Hidden files and directories are available only by direct selectors.
 Any file or directory beginning with a period (.) is considered hidden and unservable and will not have selectors generated for it by ._gophermap_ templates or raw directory lists, nor will it be accessible by direct selectors.
 
 **Note: Edit the file-access-config.json file to change the default access rules.**
+
+### Templates
+
+GoGo can create dynamic content from templates, in the same way that it generates gophermaps.
+Files with a .tmpl extension are processed when selected and use the same tokens as .gophermap template files.
+The difference is that .tmlp files are presented in directory listings and can be selected by the user.
 
 ### Lua Scripts
 
