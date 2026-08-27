@@ -230,7 +230,7 @@ Any file or directory beginning with a period (.) is considered hidden and unser
 
 GoGo can create dynamic content from templates, in the same way that it generates gophermaps.
 Files with a .tmpl extension are processed when selected and use the same tokens as .gophermap template files.
-The difference is that .tmlp files are presented in directory listings and can be selected by the user.
+The difference is that .tmpl files are presented in directory listings and can be selected by the user.
 
 ### Lua Scripts
 
