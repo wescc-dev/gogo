@@ -1,17 +1,18 @@
 package middleware
 
 import (
-	"gogo/src/configuration"
-	"gogo/src/core"
-	"gogo/src/security"
 	"log"
 	"net"
+
+	"github.com/wescc-dev/gogo/src/configuration"
+	"github.com/wescc-dev/gogo/src/core"
+	"github.com/wescc-dev/gogo/src/security"
 )
 
 var cfg = configuration.GetConfiguration()
 var fw, firewallError = security.NewFireWall(cfg.FireWallConfigFile)
 
-func AddFirewallMiddleware(svr core.IServer) {
+func AddFirewallMiddleware(svr core.Server) {
 	if firewallError != nil {
 		log.Fatal("Error loading firewall configuration: ", firewallError)
 	}

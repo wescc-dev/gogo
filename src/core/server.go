@@ -30,10 +30,10 @@ type HandlerFunc func(ctx *RequestContext) error
 
 type Middleware func(HandlerFunc) HandlerFunc
 
-type IServer interface {
-	Start() error
-	Stop(ctx context.Context) error
+type Server interface {
+	ListenAndServe() error
+	Shutdown(ctx context.Context) error
 	AddMiddleware(middleware Middleware)
 	IsStarted() bool
-	GetCurrentServerInfo() ServerInfoView
+	GetCurrentServerInfo() ServerInfo
 }

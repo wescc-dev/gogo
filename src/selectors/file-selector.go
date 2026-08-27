@@ -2,17 +2,18 @@ package selectors
 
 import (
 	"fmt"
-	"gogo/src/core"
-	"gogo/src/security"
-	"gogo/src/utility"
 	"path/filepath"
+
+	"github.com/wescc-dev/gogo/src/core"
+	"github.com/wescc-dev/gogo/src/security"
+	"github.com/wescc-dev/gogo/src/utility"
 )
 
 type FileSelector struct {
-	svrInfoProvider core.IServerInfoViewProvider
+	svrInfoProvider core.IServerInfoProvider
 }
 
-func NewFileSelector(svrInfoProvider core.IServerInfoViewProvider) ISelector {
+func NewFileSelector(svrInfoProvider core.IServerInfoProvider) Selector {
 	return &FileSelector{svrInfoProvider: svrInfoProvider}
 }
 

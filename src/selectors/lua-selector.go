@@ -2,32 +2,34 @@ package selectors
 
 import (
 	"fmt"
-	"gogo/src/core"
-	"gogo/src/utility"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 
+	"github.com/wescc-dev/gogo/src/core"
+	"github.com/wescc-dev/gogo/src/utility"
+
 	"github.com/Shopify/go-lua"
 	_ "github.com/Shopify/go-lua"
 )
 
 type LuaSelector struct {
-	svrInfoProvider core.IServerInfoViewProvider
+	svrInfoProvider core.IServerInfoProvider
 }
 
-func NewLuaSelector(svrInfoProvider core.IServerInfoViewProvider) ISelector {
+func NewLuaSelector(svrInfoProvider core.IServerInfoProvider) Selector {
 	return &LuaSelector{svrInfoProvider: svrInfoProvider}
 }
 
 func (s *LuaSelector) Select(ctx *core.RequestContext) (*SelectResult, error) {
+	luaFileExtension := s.svrInfoProvider.GetCurrentServerInfo().LuaScriptFileExtension
 	scriptPath := filepath.Join(ctx.Request.RootDir, ctx.Request.Selector)
 	if !utility.FileExists(scriptPath) {
 		return &SelectResult{Handled: false}, nil
 	}
-	if !strings.HasSuffix(strings.ToLower(scriptPath), ".lua") {
+	if !strings.HasSuffix(strings.ToLower(scriptPath), luaFileExtension) {
 		return &SelectResult{Handled: false}, nil
 	}
 	l := s.initLua(ctx)

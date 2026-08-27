@@ -2,9 +2,6 @@ package selectors
 
 import (
 	"fmt"
-	"gogo/src/configuration"
-	"gogo/src/core"
-	"gogo/src/security"
 	"io"
 	"io/fs"
 	"net"
@@ -14,6 +11,10 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/wescc-dev/gogo/src/configuration"
+	"github.com/wescc-dev/gogo/src/core"
+	"github.com/wescc-dev/gogo/src/security"
 )
 
 func WriteErrorToConn(conn net.Conn, timeOut time.Duration, errMessage string, v ...any) error {
@@ -60,7 +61,7 @@ func writeBannerToConn(conn net.Conn, timeOut time.Duration) error {
 	if err != nil {
 		return err
 	}
-	if _, err := conn.Write([]byte(m.AppName)); err != nil {
+	if _, err := conn.Write([]byte(m.Footer)); err != nil {
 		return err
 	}
 	return nil

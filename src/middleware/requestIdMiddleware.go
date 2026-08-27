@@ -4,12 +4,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"gogo/src/core"
 	"net"
 	"time"
+
+	"github.com/wescc-dev/gogo/src/core"
 )
 
-func AddRequestId(svr core.IServer) {
+func AddRequestId(svr core.Server) {
 	svr.AddMiddleware(requestIdMiddleware)
 }
 

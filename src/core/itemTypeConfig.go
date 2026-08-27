@@ -2,9 +2,10 @@ package core
 
 import (
 	"encoding/json"
-	"gogo/src/configuration"
 	"os"
 	"slices"
+
+	"github.com/wescc-dev/gogo/src/configuration"
 )
 
 type typeMappings struct {
@@ -12,6 +13,7 @@ type typeMappings struct {
 	Pictogram  string   `json:"pictogram"`
 	Extensions []string `json:"extensions"`
 }
+
 type defaultItemType struct {
 	ItemType  string `json:"itemType"`
 	Pictogram string `json:"pictogram"`
@@ -24,11 +26,13 @@ type ItemTypeConfig struct {
 }
 
 var cfg = configuration.GetConfiguration()
+
 var itemTypeConfig ItemTypeConfig
 
 func init() {
 	_ = loadConfig()
 }
+
 func loadConfig() error {
 	data, err := os.ReadFile(cfg.ItemTypeConfigFile)
 	if err != nil {

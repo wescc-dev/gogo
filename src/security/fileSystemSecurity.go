@@ -3,11 +3,12 @@ package security
 import (
 	"encoding/json"
 	"fmt"
-	"gogo/src/configuration"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"github.com/wescc-dev/gogo/src/configuration"
 )
 
 type fileAccessConfig struct {

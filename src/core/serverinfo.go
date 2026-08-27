@@ -2,7 +2,7 @@ package core
 
 import "time"
 
-type ServerInfoView struct {
+type ServerInfo struct {
 	Title                   string
 	HostName                string
 	Port                    string
@@ -16,12 +16,14 @@ type ServerInfoView struct {
 	NumCpus                 int
 	GopherRoot              string
 	GophermapTemplateName   string
+	TemplateFileExtension   string
+	LuaScriptFileExtension  string
 	ServerSoftwareName      string
 	ServerSoftwareVersion   string
 	ServerSoftwareCopyright string
 	ServerSoftwareLicense   string
 }
 
-type IServerInfoViewProvider interface {
-	GetCurrentServerInfo() ServerInfoView
+type IServerInfoProvider interface {
+	GetCurrentServerInfo() ServerInfo
 }
