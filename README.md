@@ -216,7 +216,7 @@ Hidden files and directories are available only by direct selectors.
 
 *Users must know and use the direct selector to access hidden files and directories.*
 
-Any file or directory beginning with a period (.) is considered hidden and unservable  and will not have selectors generated for it by .gophermap templates or raw directory lists, nor will it be accessible by direct selectors.
+Any file or directory beginning with a period (.) is considered hidden and unservable and will not have selectors generated for it by ._gophermap_ templates or raw directory lists, nor will it be accessible by direct selectors.
 
 **Note: Edit the file-access-config.json file to change the default access rules.**
 
