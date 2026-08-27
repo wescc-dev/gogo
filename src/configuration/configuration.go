@@ -22,6 +22,8 @@ type Configuration struct {
 	FileAccessConfigFile   string
 	ItemTypeConfigFile     string
 	GophermapTemplateName  string
+	TemplateFileExtension  string
+	LuaScriptFileExtension string
 	RequestTimeoutDuration time.Duration
 	RequestMaximumBytes    int
 	OS                     string
@@ -67,6 +69,8 @@ func GetConfiguration() *Configuration {
 			FileAccessConfigFile:   getEnv("FILE_ACCESS_CONFIG_FILE", "file-access-config.json"),
 			ItemTypeConfigFile:     getEnv("ITEM_TYPE_CONFIG_FILE", "item-type-config.json"),
 			GophermapTemplateName:  ".gophermap",
+			TemplateFileExtension:  ".tmpl",
+			LuaScriptFileExtension: ".lua",
 			RequestTimeoutDuration: time.Duration(requestTimeoutSeconds) * time.Second,
 			RequestMaximumBytes:    requestMaximumBytes,
 			OS:                     runtime.GOOS,

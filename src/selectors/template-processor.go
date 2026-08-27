@@ -2,9 +2,10 @@ package selectors
 
 import (
 	"fmt"
-	"gogo/src/core"
 	"strings"
 	"text/template"
+
+	"github.com/wescc-dev/gogo/src/core"
 )
 
 func ProcessTemplate(ctx *core.RequestContext, svrInfo core.ServerInfo, dirPath string, templatePath string) error {

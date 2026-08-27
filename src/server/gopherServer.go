@@ -5,10 +5,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"gogo/src/configuration"
-	"gogo/src/core"
-	"gogo/src/security"
-	"gogo/src/selectors"
 	"io"
 	"net"
 	"path/filepath"
@@ -17,9 +13,12 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-const GophermapTemplateName = ".gophermap"
+	"github.com/wescc-dev/gogo/src/configuration"
+	"github.com/wescc-dev/gogo/src/core"
+	"github.com/wescc-dev/gogo/src/security"
+	"github.com/wescc-dev/gogo/src/selectors"
+)
 
 var cfg = configuration.GetConfiguration()
 
@@ -203,6 +202,8 @@ func (s *gopherServer) GetCurrentServerInfo() core.ServerInfo {
 		NumCpus:                 runtime.NumCPU(),
 		GopherRoot:              s.GopherRoot,
 		GophermapTemplateName:   cfg.GophermapTemplateName,
+		TemplateFileExtension:   cfg.TemplateFileExtension,
+		LuaScriptFileExtension:  cfg.LuaScriptFileExtension,
 		ServerSoftwareName:      cfg.Metadata.AppName,
 		ServerSoftwareVersion:   cfg.Metadata.Version,
 		ServerSoftwareCopyright: cfg.Metadata.Copyright,

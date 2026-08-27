@@ -2,11 +2,12 @@ package selectors
 
 import (
 	"fmt"
-	"gogo/src/core"
-	"gogo/src/utility"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/wescc-dev/gogo/src/core"
+	"github.com/wescc-dev/gogo/src/utility"
 )
 
 // DirectorySelector handles directory selectors

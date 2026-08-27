@@ -1,11 +1,12 @@
 package middleware
 
 import (
-	"gogo/src/configuration"
-	"gogo/src/core"
-	"gogo/src/security"
 	"log"
 	"net"
+
+	"github.com/wescc-dev/gogo/src/configuration"
+	"github.com/wescc-dev/gogo/src/core"
+	"github.com/wescc-dev/gogo/src/security"
 )
 
 var cfg = configuration.GetConfiguration()

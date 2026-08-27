@@ -1,7 +1,7 @@
 package selectors
 
 import (
-	"gogo/src/core"
+	"github.com/wescc-dev/gogo/src/core"
 )
 
 type SelectResult struct {

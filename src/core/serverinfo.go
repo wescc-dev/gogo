@@ -16,6 +16,8 @@ type ServerInfo struct {
 	NumCpus                 int
 	GopherRoot              string
 	GophermapTemplateName   string
+	TemplateFileExtension   string
+	LuaScriptFileExtension  string
 	ServerSoftwareName      string
 	ServerSoftwareVersion   string
 	ServerSoftwareCopyright string

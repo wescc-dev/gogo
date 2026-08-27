@@ -2,9 +2,10 @@ package core
 
 import (
 	"encoding/json"
-	"gogo/src/configuration"
 	"os"
 	"slices"
+
+	"github.com/wescc-dev/gogo/src/configuration"
 )
 
 type typeMappings struct {

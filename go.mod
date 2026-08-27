@@ -1,6 +1,6 @@
-module gogo
+module github.com/wescc-dev/gogo
 
-go 1.26
+go 1.27
 
 require (
 	github.com/Shopify/go-lua v0.0.0-20250718183320-1e37f32ad7d0

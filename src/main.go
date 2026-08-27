@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"gogo/src/configuration"
-	"gogo/src/core"
-	"gogo/src/middleware"
-	"gogo/src/server"
-	"gogo/src/utility"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/wescc-dev/gogo/src/configuration"
+	"github.com/wescc-dev/gogo/src/core"
+	"github.com/wescc-dev/gogo/src/middleware"
+	"github.com/wescc-dev/gogo/src/server"
+	"github.com/wescc-dev/gogo/src/utility"
 
 	"github.com/spf13/pflag"
 )
