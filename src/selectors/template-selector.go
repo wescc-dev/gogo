@@ -27,7 +27,7 @@ func (s *TemplateSelector) Select(ctx *core.RequestContext) (*SelectResult, erro
 		if err != nil {
 			return result, err
 		}
+		result.Handled = true
 	}
-	result.Handled = true
 	return result, nil
 }

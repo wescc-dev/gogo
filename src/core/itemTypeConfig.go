@@ -27,18 +27,22 @@ type ItemTypeConfig struct {
 
 var cfg = configuration.GetConfiguration()
 
-var itemTypeConfig ItemTypeConfig
+var itemTypeConfig *ItemTypeConfig
 
 func init() {
 	_ = loadConfig()
 }
 
 func loadConfig() error {
+	if itemTypeConfig != nil {
+		return nil
+	}
 	data, err := os.ReadFile(cfg.ItemTypeConfigFile)
 	if err != nil {
 		return err
 	}
-	if err := json.Unmarshal(data, &itemTypeConfig); err != nil {
+	itemTypeConfig = &ItemTypeConfig{}
+	if err := json.Unmarshal(data, itemTypeConfig); err != nil {
 		return err
 	}
 	return nil

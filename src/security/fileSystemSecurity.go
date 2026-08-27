@@ -17,7 +17,7 @@ type fileAccessConfig struct {
 }
 
 var cfg = configuration.GetConfiguration()
-var accessConfig fileAccessConfig
+var accessConfig *fileAccessConfig
 var compiled []*regexp.Regexp
 
 func init() {
@@ -27,12 +27,15 @@ func init() {
 	}
 }
 func loadConfig(path string) error {
+	if accessConfig != nil {
+		return nil
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-
-	if err := json.Unmarshal(data, &accessConfig); err != nil {
+	accessConfig = &fileAccessConfig{}
+	if err := json.Unmarshal(data, accessConfig); err != nil {
 		return err
 	}
 
