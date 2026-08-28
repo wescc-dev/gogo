@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -139,8 +138,7 @@ func printConfiguration() {
 
 func printInfo() {
 	log.Println("---------- GoGo Gopher Server --------")
-	log.Println(cfg.Metadata.AppName + "(" + cfg.Metadata.Version + ")")
-	log.Println(cfg.Metadata.Copyright)
-	fmt.Println(cfg.Metadata.License)
+	log.Println(cfg.Metadata.AppName, "("+cfg.Metadata.Version+")")
+	log.Println(cfg.Metadata.Copyright, "("+cfg.Metadata.License+")")
 	log.Println(cfg.Metadata.Link)
 }

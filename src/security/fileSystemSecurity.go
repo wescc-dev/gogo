@@ -23,7 +23,9 @@ var compiled []*regexp.Regexp
 func init() {
 	err := loadConfig(cfg.FileAccessConfigFile)
 	if err != nil {
+		log.Print(os.Getwd())
 		log.Fatal(err)
+
 	}
 }
 func loadConfig(path string) error {
