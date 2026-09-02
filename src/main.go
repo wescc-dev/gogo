@@ -32,7 +32,7 @@ func main() {
 
 func startServer() core.Server {
 	log.Println("Starting server...")
-	var svr, err = server.NewServer(
+	var svr, err = server.NewGopherServer(
 		cfg.Title,
 		cfg.HostName,
 		cfg.BindAddress,

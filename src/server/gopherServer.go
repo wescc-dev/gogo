@@ -50,8 +50,8 @@ type gopherServer struct {
 	stopRequested   bool
 }
 
-func NewServer(
-	Title string,
+func NewGopherServer(
+	title string,
 	hostname string,
 	bindAddr string,
 	port string,
@@ -78,7 +78,7 @@ func NewServer(
 	}
 
 	return &gopherServer{
-		Title:                  Title,
+		Title:                  title,
 		Hostname:               hostname,
 		BindAddr:               bindAddr,
 		Port:                   port,
@@ -312,7 +312,6 @@ func (s *gopherServer) readSelector(conn net.Conn, maxBytes int64, timeOut time.
 }
 
 func (s *gopherServer) serveSelector(ctx *core.RequestContext) error {
-
 	cleanSelector, realPath, err := resolveSelectorPath(ctx.Request.RootDir, ctx.Request.Selector)
 	if err != nil {
 		_ = selectors.WriteErrorToConn(ctx.Request.Conn, ctx.Request.Timeout, "Access denied")
