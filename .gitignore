@@ -7,3 +7,4 @@ docker-build.sh
 /certs/
 gogo
 __debug_bin3338832991
+.vscode
