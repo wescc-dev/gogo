@@ -200,9 +200,9 @@ SvrInfo  {
     Architecture            string
     NumCpus                 int
     GopherRoot              string
-	GophermapTemplateName   string
-	TemplateFileExtension   string
-	LuaScriptFileExtension  string
+    GophermapTemplateName   string
+    TemplateFileExtension   string
+    LuaScriptFileExtension  string
     ServerSoftwareName      string
     ServerSoftwareVersion   string
     ServerSoftwareCopyright string

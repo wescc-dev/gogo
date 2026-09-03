@@ -28,7 +28,7 @@ type Configuration struct {
 	RequestMaximumBytes    int
 	OS                     string
 	Architecture           string
-	NumCpus                int
+	CoreCount              int
 	Metadata               *Metadata
 }
 
@@ -75,7 +75,7 @@ func GetConfiguration() *Configuration {
 			RequestMaximumBytes:    requestMaximumBytes,
 			OS:                     runtime.GOOS,
 			Architecture:           runtime.GOARCH,
-			NumCpus:                runtime.NumCPU(),
+			CoreCount:              runtime.NumCPU(),
 			Metadata:               m,
 		}
 	}

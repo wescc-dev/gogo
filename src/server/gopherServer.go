@@ -115,7 +115,7 @@ func (s *gopherServer) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
-	core.SystemLog("GoGo: listening on ", address)
+	core.SystemLog("listening on ", address)
 
 	s.mu.Lock()
 	s.Handler = s.useMiddleware(s.serveSelector)

@@ -8,13 +8,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/spf13/pflag"
 	"github.com/wescc-dev/gogo/src/configuration"
 	"github.com/wescc-dev/gogo/src/core"
 	"github.com/wescc-dev/gogo/src/middleware"
 	"github.com/wescc-dev/gogo/src/server"
 	"github.com/wescc-dev/gogo/src/utility"
-
-	"github.com/spf13/pflag"
 )
 
 var cfg = configuration.GetConfiguration()
@@ -132,7 +131,7 @@ func printConfiguration() {
 	log.Println("Request timeout (sec.):", cfg.RequestTimeoutDuration)
 	log.Println("OS:", cfg.OS)
 	log.Println("Architecture:", cfg.Architecture)
-	log.Println("Number of CPUs:", cfg.NumCpus)
+	log.Println("Number of CPUs:", cfg.CoreCount)
 	log.Println("-------------------------------------")
 }
 

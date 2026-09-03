@@ -1,4 +1,4 @@
-i{{ .SvrInfo.Title}}	TITLE	error.host	1
+i{{ .SvrInfo.Title }}	TITLE	error.host	1
 iHost: {{ .SvrInfo.HostName }}:{{ .SvrInfo.Port }}		error.host	1
 iCurrent Connections: {{ .SvrInfo.CurrentConnections }}		error.host	1
 iTotal Connections: {{ .SvrInfo.TotalConnections }}		error.host	1
